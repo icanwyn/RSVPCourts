@@ -27,130 +27,62 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .field input,.field select{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:clamp(11px,2.5vw,15px) 18px;font-family:'Outfit',sans-serif;font-size:clamp(15px,2.5vw,19px);font-weight:500;color:var(--white);outline:none;transition:border-color .2s,background .2s;width:100%}
 .field input::placeholder{color:rgba(255,255,255,.18)}
 .field input:focus,.field select:focus{border-color:var(--lime);background:rgba(193,255,114,.06)}
-.field select option{background:#0a2016;color:var(--white)}
 .btn-main{width:100%;padding:clamp(13px,3vw,17px);background:var(--lime);color:var(--dark);border:none;border-radius:16px;font-family:'Bebas Neue',sans-serif;font-size:clamp(18px,3.5vw,23px);letter-spacing:.1em;cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .2s;box-shadow:0 4px 28px rgba(193,255,114,.22)}
-.btn-main:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 36px rgba(193,255,114,.38)}
-.btn-main:active:not(:disabled){transform:translateY(0)}
 .btn-main:disabled{opacity:.25;cursor:not-allowed}
-.btn-ghost{width:100%;padding:clamp(11px,2vw,13px);background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.09);border-radius:16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:border-color .2s,color .2s}
-.btn-ghost:hover{border-color:rgba(255,255,255,.22);color:var(--white)}
-.wait-wrap{text-align:center;padding:1rem 0}
-.wait-ring{width:76px;height:76px;border-radius:50%;background:rgba(193,255,114,.07);border:2px solid rgba(193,255,114,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;animation:breathe 2.2s ease-in-out infinite}
-@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(193,255,114,.14)}50%{transform:scale(1.06);box-shadow:0 0 0 14px rgba(193,255,114,0)}}
-.wait-ring svg{width:32px;height:32px;stroke:var(--lime);stroke-width:1.5;fill:none;animation:spin 3s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.wait-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,5vw,30px);color:var(--lime);letter-spacing:.07em;margin-bottom:6px}
-.wait-msg{font-size:14px;color:var(--muted);line-height:1.6}
-.dots{display:flex;gap:7px;justify-content:center;margin-top:1.4rem}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--lime);opacity:.25;animation:dpop 1.4s ease-in-out infinite}
-.dot:nth-child(2){animation-delay:.22s}.dot:nth-child(3){animation-delay:.44s}
-@keyframes dpop{0%,80%,100%{opacity:.25;transform:scale(1)}40%{opacity:1;transform:scale(1.4)}}
-.code-box{background:rgba(193,255,114,.07);border:2px solid rgba(193,255,114,.28);border-radius:20px;padding:1.75rem 1rem;text-align:center;position:relative;overflow:hidden}
-.code-box::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(193,255,114,.09) 0%,transparent 65%);pointer-events:none}
-.code-hint{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
-.code-val{font-family:'Bebas Neue',sans-serif;font-size:clamp(46px,10vw,66px);letter-spacing:.14em;color:var(--lime);line-height:1;text-shadow:0 0 48px rgba(193,255,114,.45);animation:codepop .5s cubic-bezier(.34,1.5,.64,1)}
-@keyframes codepop{from{opacity:0;transform:scale(.65)}to{opacity:1;transform:scale(1)}}
-.code-owner{font-size:13px;color:var(--muted);margin-top:8px}
-.expiry{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 18px;border-radius:24px;font-size:13px;font-weight:600}
-.exp-ok{background:rgba(193,255,114,.12);color:var(--lime)}
-.exp-warn{background:rgba(255,179,71,.15);color:var(--warn)}
-.exp-danger{background:rgba(255,107,107,.15);color:var(--danger)}
-.exp-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite;flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
 .note{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.55}
-.note-icon{font-size:17px;flex-shrink:0;margin-top:1px}
-.decline-circle{width:68px;height:68px;border-radius:50%;background:rgba(255,107,107,.1);border:2px solid rgba(255,107,107,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;font-size:28px}
-.clock{position:fixed;bottom:18px;right:22px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.1em;color:rgba(255,255,255,.12);z-index:10}
-.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--lime);color:var(--dark);padding:10px 22px;border-radius:24px;font-weight:700;font-size:13px;font-family:'Outfit',sans-serif;z-index:999;transition:transform .35s cubic-bezier(.34,1.4,.64,1);white-space:nowrap;pointer-events:none}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.err{background:var(--danger);color:#fff}
-.conn{position:fixed;top:16px;right:16px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;display:flex;align-items:center;gap:5px}
-.conn.ok{background:rgba(193,255,114,.15);color:var(--lime)}
-.conn.err{background:rgba(255,107,107,.15);color:var(--danger)}
-.conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
+.code-box{background:rgba(193,255,114,.07);border:2px solid rgba(193,255,114,.28);border-radius:20px;padding:1.75rem 1rem;text-align:center}
+.code-val{font-family:'Bebas Neue',sans-serif;font-size:clamp(46px,10vw,66px);letter-spacing:.14em;color:var(--lime)}
 </style>
 </head>
 <body>
 <div class="orb"></div>
-<div class="conn ok" id="connBadge"><div class="conn-dot"></div><span id="connTxt">Connecting…</span></div>
 <div class="app">
   <div class="header">
-    <div class="gym-name" id="gymName">ACE BADMINTON CLUB</div>
-    <div class="gym-sub" id="gymSub">Player Check-In · Kiosk</div>
+    <div class="gym-name" id="gymName">LOADING...</div>
+    <div class="gym-sub" id="gymSub">Player Check-In</div>
   </div>
   <div class="card">
 
-    <!-- S1: Name entry -->
+    <!-- Entry -->
     <div class="screen active" id="s-entry">
-      <div>
-        <div class="s-title">Hello!<br>Who are you?</div>
-        <div class="s-sub">Pay at the front desk first, then enter your name here.</div>
-      </div>
-      <div class="field">
-        <div class="flabel">Full name</div>
-        <input type="text" id="nameInput" placeholder="First &amp; last name…" autocomplete="off" oninput="onNameType()">
-      </div>
-      <div class="field">
-        <div class="flabel">Pass type</div>
-        <select id="passSelect">
-          <option value="day">Day Pass — expires midnight tonight</option>
-          <option value="week">Week Pass — expires in 7 days</option>
-          <option value="month">Monthly Member — expires in 30 days</option>
-        </select>
-      </div>
+      <div><div class="s-title">Hello!<br>Who are you?</div><div class="s-sub" id="feeInfo">Pay at front desk first</div></div>
+      <div class="field"><div class="flabel">Full name</div><input type="text" id="nameInput" placeholder="First & last name" oninput="onNameType()"></div>
+      <div class="field"><div class="flabel">Pass type</div><select id="passSelect"></select></div>
       <button class="btn-main" id="submitBtn" onclick="submitRequest()" disabled>SUBMIT TO FRONT DESK →</button>
-      <div class="note"><div class="note-icon">🔒</div><div>Staff will confirm your payment and generate a unique code. It appears here the moment they approve.</div></div>
+      <div class="note">Staff will confirm payment and issue your code.</div>
     </div>
 
-    <!-- S2: Waiting -->
+    <!-- Waiting -->
     <div class="screen" id="s-waiting">
-      <div class="wait-wrap">
-        <div class="wait-ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-        <div class="wait-name" id="waitName">HI!</div>
-        <div class="wait-msg">Request sent to front desk.<br>Waiting for payment confirmation…</div>
-        <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      <div style="text-align:center">
+        <div class="s-title" id="waitName">HI!</div>
+        <div class="s-sub">Waiting for staff approval...</div>
       </div>
-      <div class="note"><div class="note-icon">📋</div><div>Your code will appear here the moment staff approves. Don't close this page.</div></div>
     </div>
 
-    <!-- S3: Code ready -->
+    <!-- Code -->
     <div class="screen" id="s-code">
       <div style="text-align:center"><div class="s-title" id="codeGreeting">YOUR CODE IS READY!</div></div>
       <div class="code-box">
-        <div class="code-hint">Your check-in code</div>
         <div class="code-val" id="codeVal">——</div>
-        <div class="code-owner" id="codeOwner">— · Day Pass</div>
+        <div id="codeOwner" style="margin-top:8px;color:#aaa"></div>
       </div>
-      <div style="text-align:center"><div class="expiry exp-ok" id="expiryPill"><div class="exp-dot"></div><span id="expiryTxt">Valid until midnight</span></div></div>
-      <div class="note"><div class="note-icon">🎾</div><div>Scan the QR at any court or type this code at the court kiosk. <strong style="color:var(--lime)">One court only</strong> — your code locks to the first court you join.</div></div>
-      <button class="btn-ghost" onclick="goHome()">← Done — check in another player</button>
+      <button class="btn-main" onclick="goHome()">CHECK IN ANOTHER PLAYER</button>
     </div>
 
-    <!-- S4: Declined -->
+    <!-- Declined -->
     <div class="screen" id="s-declined">
-      <div style="text-align:center;padding:.5rem 0">
-        <div class="decline-circle">⛔</div>
-        <div class="s-title" style="color:var(--danger);text-align:center">REQUEST<br>DECLINED</div>
-        <div class="s-sub" style="text-align:center;margin-top:8px">Please speak with a staff member at the front desk.</div>
-      </div>
-      <button class="btn-ghost" onclick="goHome()">← Try again</button>
+      <div style="text-align:center;color:#ff6b6b"><div class="s-title">REQUEST DECLINED</div></div>
+      <button class="btn-main" onclick="goHome()">TRY AGAIN</button>
     </div>
-
   </div>
 </div>
-<div class="clock" id="clock"></div>
-<div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════
-//  PASTE YOUR SUPABASE CREDENTIALS HERE
-// ═══════════════════════════════════════════════
-const SUPABASE_URL     = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SUPABASE_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
-// Read gym slug from URL ?gym= param, fall back to hardcoded default
-const GYM_SLUG = new URLSearchParams(window.location.search).get('gym') || '';
-// ═══════════════════════════════════════════════
 
+const GYM_SLUG = new URLSearchParams(window.location.search).get('gym') || '';
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -159,21 +91,24 @@ let currentPlayerId = null;
 let realtimeSub = null;
 
 async function init() {
-  updateClock(); setInterval(updateClock, 30000);
   try {
-    const { data, error } = await db.from('gyms').select('*').eq('slug', GYM_SLUG).single();
-    if (error || !data) throw error;
+    const { data } = await db.from('gyms').select('*').eq('slug', GYM_SLUG).single();
+    if (!data) throw new Error();
     gymData = data;
-    document.getElementById('gymName').textContent = data.name.toUpperCase();
-    document.getElementById('gymSub').textContent = `${data.sport} · ${data.num_courts} Courts · Player Check-In`;
-    setConn(true);
-  } catch(e) { setConn(false); toast('Cannot reach server — check config', true); }
-}
 
-function setConn(ok) {
-  const b = document.getElementById('connBadge');
-  b.className = 'conn ' + (ok ? 'ok' : 'err');
-  document.getElementById('connTxt').textContent = ok ? 'Live' : 'Offline';
+    document.getElementById('gymName').textContent = data.name.toUpperCase();
+    document.getElementById('gymSub').textContent = `${data.sport} • ${data.num_courts} Courts`;
+
+    // Pass options with fees
+    const sel = document.getElementById('passSelect');
+    sel.innerHTML = `
+      <option value="day">Day Pass — $${data.day_fee} • expires midnight</option>
+      <option value="week">Week Pass — $${data.week_fee} • 7 days</option>
+      <option value="month">Monthly Member — $${data.month_fee} • 30 days</option>
+    `;
+  } catch(e) {
+    alert('Gym not found. Use ?gym=YOUR-SLUG in the URL.');
+  }
 }
 
 function onNameType() {
@@ -183,58 +118,52 @@ function onNameType() {
 async function submitRequest() {
   const name = document.getElementById('nameInput').value.trim();
   const pass = document.getElementById('passSelect').value;
-  if (!gymData) { toast('Not connected to Supabase', true); return; }
-  try {
-    const { data, error } = await db.from('players').insert({
-      gym_id: gymData.id, name, pass_type: pass,
-      code: 'PENDING', status: 'pending', expires_at: expiryFor(pass)
-    }).select().single();
-    if (error) throw error;
-    currentPlayerId = data.id;
-    document.getElementById('waitName').textContent = 'HI ' + name.split(' ')[0].toUpperCase() + '!';
-    showScreen('s-waiting');
-    listenForApproval(data.id);
-    toast('Sent to front desk!');
-  } catch(e) { toast('Error — check connection', true); console.error(e); }
+  if (!gymData || !name) return;
+
+  const { data, error } = await db.from('players').insert({
+    gym_id: gymData.id,
+    name,
+    pass_type: pass,
+    code: null,
+    status: 'pending',
+    expires_at: expiryFor(pass)
+  }).select().single();
+
+  if (error) { console.error(error); return; }
+
+  currentPlayerId = data.id;
+  document.getElementById('waitName').textContent = name.split(' ')[0].toUpperCase();
+  showScreen('s-waiting');
+  listenForApproval(data.id);
 }
 
-function listenForApproval(playerId) {
+function expiryFor(pass) {
+  const d = new Date();
+  if (pass === 'day') d.setHours(23,59,59,999);
+  else if (pass === 'week') d.setDate(d.getDate() + 7);
+  else d.setDate(d.getDate() + 30);
+  return d.toISOString();
+}
+
+function listenForApproval(id) {
   if (realtimeSub) db.removeChannel(realtimeSub);
-  realtimeSub = db.channel('kiosk-player-' + playerId)
-    .on('postgres_changes', {
-      event: 'UPDATE', schema: 'public', table: 'players', filter: `id=eq.${playerId}`
-    }, ({ new: p }) => {
-      if (p.status === 'active') revealCode(p);
-      if (p.status === 'revoked') showScreen('s-declined');
-    }).subscribe();
+  realtimeSub = db.channel('player-'+id)
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'players', filter:`id=eq.${id}`}, 
+      ({new: p}) => {
+        if (p.status === 'active') revealCode(p);
+        if (p.status === 'revoked') showScreen('s-declined');
+      }).subscribe();
 }
 
-function revealCode(player) {
-  document.getElementById('codeGreeting').textContent = 'YOUR CODE IS READY, ' + player.name.split(' ')[0].toUpperCase() + '!';
-  document.getElementById('codeVal').textContent = player.code;
-  document.getElementById('codeOwner').textContent = player.name + ' · ' + passLabel(player.pass_type);
-  setExpiryPill(player.expires_at, player.pass_type);
+function revealCode(p) {
+  document.getElementById('codeGreeting').textContent = `YOUR CODE IS READY, ${p.name.split(' ')[0].toUpperCase()}!`;
+  document.getElementById('codeVal').textContent = p.code;
+  document.getElementById('codeOwner').textContent = `${p.name} • ${p.pass_type.toUpperCase()}`;
   showScreen('s-code');
 }
 
-function setExpiryPill(expiresAt, passType) {
-  const ms = new Date(expiresAt) - new Date();
-  const pill = document.getElementById('expiryPill');
-  let txt, cls;
-  if (passType === 'day') {
-    txt = ms < 3600000 ? 'Expires in under 1 hour!' : 'Valid until midnight tonight';
-    cls = ms < 3600000 ? 'exp-danger' : ms < 7200000 ? 'exp-warn' : 'exp-ok';
-  } else {
-    txt = 'Valid for ' + Math.ceil(ms / 86400000) + ' days';
-    cls = 'exp-ok';
-  }
-  pill.className = 'expiry ' + cls;
-  document.getElementById('expiryTxt').textContent = txt;
-}
-
 function goHome() {
-  if (realtimeSub) { db.removeChannel(realtimeSub); realtimeSub = null; }
-  currentPlayerId = null;
+  if (realtimeSub) db.removeChannel(realtimeSub);
   document.getElementById('nameInput').value = '';
   document.getElementById('submitBtn').disabled = true;
   showScreen('s-entry');
@@ -245,24 +174,9 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 
-function passLabel(p) { return {day:'Day Pass',week:'Week Pass',month:'Monthly Member'}[p] || p; }
-
-function expiryFor(pass) {
-  if (pass === 'day') { const m = new Date(); m.setHours(23,59,59,999); return m.toISOString(); }
-  return new Date(Date.now() + {week:168,month:720}[pass] * 3600000).toISOString();
-}
-
 function updateClock() {
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});
+  // optional
 }
-
-let toastTimer;
-function toast(msg, err=false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast show' + (err ? ' err' : '');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-}
-
 init();
 </script>
 </body>
