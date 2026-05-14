@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CourtSync — Owner Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6f3;--surface:#fff;--dark:#0d1a0f;
+  --green:#1a7a4a;--green-light:#e6f5eb;--green-mid:#2d9e52;
+  --muted:#6b7a6b;--border:#e0e8e0;--border2:#c8d8c8;
+  --red:#c0392b;--red-light:#fdf0ef;
+  --amber:#b37a00;--amber-light:#fef9e7;
+  --shadow:0 2px 16px rgba(0,0,0,.07);
+}
+html,body{min-height:100%;background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green)}
+.logo span{color:var(--muted);font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{font-size:13px;color:var(--muted);background:var(--bg);padding:5px 12px;border-radius:20px;border:1px solid var(--border)}
+.btn-sm{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .15s}
+.btn-logout{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.btn-logout:hover{background:var(--red-light);color:var(--red);border-color:transparent}
+
+/* ── LAYOUT ── */
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+
+/* ── AUTH PAGE ── */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.auth-logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--green);text-align:center;margin-bottom:4px}
+.auth-sub{font-size:14px;color:var(--muted);text-align:center;margin-bottom:2rem}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:1.5rem}
+.auth-tab{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.auth-tab.active{background:var(--surface);color:var(--dark);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.field input{padding:11px 14px;border:1.5px solid var(--border2);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dark);outline:none;transition:border-color .2s;background:var(--bg)}
+.field input:focus{border-color:var(--green);background:#fff}
+.btn-primary{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.02em;margin-top:4px}
+.btn-primary:hover{background:#145e38;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.auth-err{font-size:13px;color:var(--red);background:var(--red-light);padding:10px 14px;border-radius:8px;margin-bottom:12px;display:none}
+.auth-err.show{display:block}
+
+/* ── ONBOARDING ── */
+.onboard-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.onboard-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:560px;overflow:hidden;box-shadow:var(--shadow)}
+.onboard-header{background:var(--green);padding:2rem 2rem 1.5rem;color:#fff}
+.oh-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px}
+.oh-sub{font-size:14px;opacity:.8}
+.onboard-body{padding:1.75rem 2rem}
+.step-indicator{display:flex;gap:6px;margin-bottom:1.5rem}
+.step-dot{height:4px;flex:1;border-radius:2px;background:var(--border)}
+.step-dot.done{background:var(--green)}
+.step-dot.active{background:var(--green-mid)}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toggle-group{display:flex;gap:6px}
+.toggle-opt{flex:1;padding:10px 8px;border:1.5px solid var(--border2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;color:var(--muted);background:var(--bg);font-family:'DM Sans',sans-serif;transition:all .15s}
+.toggle-opt.sel{background:var(--green);border-color:var(--green);color:#fff}
+.color-row{display:flex;gap:8px;flex-wrap:wrap}
+.color-swatch{width:32px;height:32px;border-radius:8px;cursor:pointer;border:3px solid transparent;transition:all .15s}
+.color-swatch.sel{border-color:var(--dark);transform:scale(1.15)}
+.sport-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sport-btn{padding:10px 6px;border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:var(--muted);background:var(--bg);font-family:'DM Sans',sans-serif;transition:all .15s}
+.sport-btn.sel{background:var(--green);border-color:var(--green);color:#fff}
+.onboard-footer{padding:1rem 2rem 1.5rem;display:flex;gap:10px;border-top:1px solid var(--border)}
+.btn-back{flex:0 0 auto;padding:12px 18px;background:transparent;color:var(--muted);border:1.5px solid var(--border2);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.btn-back:hover{background:var(--bg)}
+.btn-next{flex:1;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-next:hover{background:#145e38}
+
+/* ── DASHBOARD ── */
+.dash-wrap{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+.dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px}
+.gym-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--dark)}
+.gym-slug{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px}
+.dash-actions{display:flex;gap:8px}
+.btn-outline{padding:9px 16px;background:transparent;color:var(--green);border:1.5px solid var(--green);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-outline:hover{background:var(--green-light)}
+.btn-danger-outline{border-color:var(--red);color:var(--red)}
+.btn-danger-outline:hover{background:var(--red-light)}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+@media(max-width:600px){.stats-grid{grid-template-columns:1fr 1fr}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.stat-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--green)}
+.stat-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:3px}
+
+.dash-grid{display:grid;grid-template-columns:1fr 340px;gap:16px}
+@media(max-width:768px){.dash-grid{grid-template-columns:1fr}}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.panel-body{padding:16px 18px}
+
+/* SETTINGS FORM */
+.settings-section{margin-bottom:1.5rem}
+.settings-section:last-child{margin-bottom:0}
+.settings-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+@media(max-width:480px){.settings-row{grid-template-columns:1fr}}
+.settings-field{display:flex;flex-direction:column;gap:5px}
+.settings-field label{font-size:12px;color:var(--muted);font-weight:500}
+.settings-field input,.settings-field select{padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dark);outline:none;transition:border-color .2s;background:var(--bg)}
+.settings-field input:focus,.settings-field select:focus{border-color:var(--green);background:#fff}
+.save-btn{padding:10px 20px;background:var(--green);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.save-btn:hover{background:#145e38}
+
+/* QR SECTION */
+.qr-box{border:2px solid var(--green);border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:12px}
+.qr-svg{width:120px;height:120px}
+.url-chip{font-family:'DM Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);padding:8px 12px;border-radius:8px;word-break:break-all;color:var(--muted);margin-bottom:10px}
+.copy-btn{width:100%;padding:9px;background:var(--green-light);color:var(--green);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:var(--green);color:#fff}
+
+/* COURT OVERVIEW */
+.court-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.court-row:last-child{border-bottom:none}
+.court-badge{width:28px;height:28px;border-radius:7px;background:var(--green-light);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace}
+.court-name{flex:1;font-weight:600}
+.court-status-chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
+.cs-active{background:var(--green-light);color:var(--green)}
+.cs-empty{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.cs-full{background:var(--amber-light);color:var(--amber)}
+
+/* LINKS SECTION */
+.link-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.link-row:last-child{border-bottom:none}
+.link-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.link-label{font-size:13px;font-weight:600;flex:1}
+.link-sub{font-size:11px;color:var(--muted)}
+.link-open{padding:6px 12px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--dark);text-decoration:none;white-space:nowrap}
+.link-open:hover{background:var(--green-light);border-color:var(--green);color:var(--green)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--dark);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;transition:transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green)}
+.toast.err{background:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR (hidden on auth/onboard) -->
+<div class="topbar" id="topbar" style="display:none">
+  <div class="logo">Court<span>Sync</span> <span style="font-size:11px;background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:600">Owner</span></div>
+  <div class="topbar-right">
+    <div class="user-chip" id="userEmail">—</div>
+    <button class="btn-sm btn-logout" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<!-- ══ PAGE: AUTH ══ -->
+<div class="page active" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">CourtSync</div>
+      <div class="auth-sub">Owner Portal — manage your gym</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login',this)">Sign in</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup',this)">Create account</button>
+      </div>
+      <div class="auth-err" id="authErr"></div>
+      <div id="auth-login">
+        <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+        <button class="btn-primary" onclick="signIn()">Sign in →</button>
+      </div>
+      <div id="auth-signup" style="display:none">
+        <div class="field"><label>Your name</label><input type="text" id="signupName" placeholder="Jane Smith"></div>
+        <div class="field"><label>Email</label><input type="email" id="signupEmail" placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="signupPass" placeholder="Min 8 characters"></div>
+        <button class="btn-primary" onclick="signUp()">Create account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ONBOARDING ══ -->
+<div class="page" id="page-onboard">
+  <div class="onboard-wrap">
+    <div class="onboard-card">
+      <div class="onboard-header">
+        <div class="oh-title">Set up your gym</div>
+        <div class="oh-sub">Takes about 2 minutes — you can change everything later</div>
+      </div>
+      <div class="onboard-body">
+        <div class="step-indicator" id="stepDots"></div>
+
+        <!-- Step 1: Basics -->
+        <div id="ob-step-1">
+          <div class="section-label">Gym details</div>
+          <div class="field"><label>Gym name</label><input type="text" id="ob-gymName" placeholder="e.g. Ace Badminton Club"></div>
+          <div class="field"><label>Sport type</label>
+            <div class="sport-grid" id="sportGrid">
+              <button class="sport-btn sel" onclick="selectSport('Badminton',this)">🏸 Badminton</button>
+              <button class="sport-btn" onclick="selectSport('Pickleball',this)">🥒 Pickleball</button>
+              <button class="sport-btn" onclick="selectSport('Tennis',this)">🎾 Tennis</button>
+              <button class="sport-btn" onclick="selectSport('Volleyball',this)">🏐 Volleyball</button>
+              <button class="sport-btn" onclick="selectSport('Basketball',this)">🏀 Basketball</button>
+              <button class="sport-btn" onclick="selectSport('Squash',this)">🎯 Squash</button>
+            </div>
+          </div>
+          <div class="field"><label>Brand color</label>
+            <div class="color-row" id="colorRow">
+              <div class="color-swatch sel" style="background:#1a7a4a" data-color="#1a7a4a" onclick="selectColor('#1a7a4a',this)"></div>
+              <div class="color-swatch" style="background:#1a5fa8" data-color="#1a5fa8" onclick="selectColor('#1a5fa8',this)"></div>
+              <div class="color-swatch" style="background:#7b2fa8" data-color="#7b2fa8" onclick="selectColor('#7b2fa8',this)"></div>
+              <div class="color-swatch" style="background:#c0392b" data-color="#c0392b" onclick="selectColor('#c0392b',this)"></div>
+              <div class="color-swatch" style="background:#b37a00" data-color="#b37a00" onclick="selectColor('#b37a00',this)"></div>
+              <div class="color-swatch" style="background:#0d6e6e" data-color="#0d6e6e" onclick="selectColor('#0d6e6e',this)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Courts -->
+        <div id="ob-step-2" style="display:none">
+          <div class="section-label">Court configuration</div>
+          <div class="grid-2">
+            <div class="field"><label>Number of courts</label>
+              <input type="number" id="ob-numCourts" value="4" min="1" max="30">
+            </div>
+            <div class="field"><label>Session duration</label>
+              <select id="ob-sessionMins">
+                <option value="20">20 min</option>
+                <option value="30" selected>30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min</option>
+                <option value="90">90 min</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-top:8px"><label>Players per court</label>
+            <div class="toggle-group">
+              <button class="toggle-opt" id="p2" onclick="selectPlayers(2)">2 — Singles</button>
+              <button class="toggle-opt sel" id="p4" onclick="selectPlayers(4)">4 — Doubles</button>
+            </div>
+          </div>
+          <div class="field" style="margin-top:8px"><label>Max queue per court</label>
+            <input type="number" id="ob-maxQueue" value="6" min="2" max="20">
+          </div>
+          <div class="field" style="margin-top:8px"><label>Show wait time to players?</label>
+            <div class="toggle-group">
+              <button class="toggle-opt sel" id="wt-yes" onclick="selectWait(true)">Yes</button>
+              <button class="toggle-opt" id="wt-no" onclick="selectWait(false)">No</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Done -->
+        <div id="ob-step-3" style="display:none;text-align:center;padding:1rem 0">
+          <div style="font-size:48px;margin-bottom:1rem">🎉</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px">You're all set!</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6">Your gym is live. Your QR code and player links are ready to go.</div>
+        </div>
+      </div>
+      <div class="onboard-footer">
+        <button class="btn-back" id="ob-back" onclick="obBack()" style="display:none">← Back</button>
+        <button class="btn-next" id="ob-next" onclick="obNext()">Continue →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: DASHBOARD ══ -->
+<div class="page" id="page-dash">
+  <div class="dash-wrap">
+
+    <div class="dash-header">
+      <div>
+        <div class="gym-title" id="dash-gymName">Ace Badminton Club</div>
+        <div class="gym-slug" id="dash-gymSlug">courtsync.app/gym/ace-badminton</div>
+      </div>
+      <div class="dash-actions">
+        <button class="btn-outline" onclick="showSettings()">⚙ Settings</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="ds-checkins">0</div><div class="stat-lbl">Today's check-ins</div></div>
+      <div class="stat-card"><div class="stat-val" id="ds-active">0</div><div class="stat-lbl">Active on courts</div></div>
+      <div class="stat-card"><div class="stat-val" id="ds-queue">0</div><div class="stat-lbl">In queue</div></div>
+      <div class="stat-card"><div class="stat-val" id="ds-open">0</div><div class="stat-lbl">Open courts</div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div>
+
+        <!-- Settings panel -->
+        <div class="panel" id="settingsPanel" style="margin-bottom:16px;display:none">
+          <div class="panel-head">
+            <div class="panel-title">Gym settings</div>
+            <button class="btn-sm" onclick="hideSettings()" style="background:var(--bg);border:1px solid var(--border2);color:var(--muted)">✕ Close</button>
+          </div>
+          <div class="panel-body">
+            <div class="settings-section">
+              <div class="settings-label">Venue</div>
+              <div class="settings-row">
+                <div class="settings-field"><label>Gym name</label><input type="text" id="s-gymName"></div>
+                <div class="settings-field"><label>Sport</label>
+                  <select id="s-sport">
+                    <option>Badminton</option><option>Pickleball</option><option>Tennis</option>
+                    <option>Volleyball</option><option>Basketball</option><option>Squash</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-label">Courts</div>
+              <div class="settings-row">
+                <div class="settings-field"><label>Number of courts</label><input type="number" id="s-numCourts" min="1" max="30"></div>
+                <div class="settings-field"><label>Session duration</label>
+                  <select id="s-sessionMins">
+                    <option value="20">20 min</option><option value="30">30 min</option>
+                    <option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option>
+                  </select>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-field"><label>Players per court</label>
+                  <select id="s-playersPerCourt"><option value="2">2 — Singles</option><option value="4">4 — Doubles</option></select>
+                </div>
+                <div class="settings-field"><label>Max queue per court</label><input type="number" id="s-maxQueue" min="2" max="20"></div>
+              </div>
+            </div>
+            <button class="save-btn" onclick="saveSettings()">Save changes</button>
+          </div>
+        </div>
+
+        <!-- Court overview -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div class="panel-title">Courts live</div><div id="live-dot" style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.2s infinite"></div></div>
+          <div class="panel-body"><div id="courtOverview"></div></div>
+        </div>
+
+        <!-- Player list -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Checked in today</div>
+            <button class="btn-sm" onclick="exportCSV()" style="background:var(--bg);border:1px solid var(--border2);color:var(--muted)">Export CSV</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="background:var(--bg)">
+                <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)">Player</th>
+                <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)">Code</th>
+                <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)">Pass</th>
+                <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)">Status</th>
+                <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+              </tr></thead>
+              <tbody id="playerTable"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No check-ins yet today</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right sidebar -->
+      <div>
+
+        <!-- QR code -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div class="panel-title">Player QR code</div></div>
+          <div class="panel-body">
+            <div class="qr-box"><svg class="qr-svg" id="qrSvg" viewBox="0 0 7 7" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"></svg></div>
+            <div class="url-chip" id="qrUrl">—</div>
+            <button class="copy-btn" onclick="copyUrl()">📋 Copy player link</button>
+          </div>
+        </div>
+
+        <!-- Screen links -->
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Your screens</div></div>
+          <div class="panel-body" style="padding:0 18px">
+            <div class="link-row">
+              <div class="link-icon" style="background:#e6f5eb">📱</div>
+              <div><div class="link-label">Player Kiosk</div><div class="link-sub">QR code points here</div></div>
+              <a class="link-open" id="link-kiosk" href="#" target="_blank">Open ↗</a>
+            </div>
+            <div class="link-row">
+              <div class="link-icon" style="background:#eaf1fb">🖥️</div>
+              <div><div class="link-label">Front Desk</div><div class="link-sub">Staff view</div></div>
+              <a class="link-open" id="link-desk" href="#" target="_blank">Open ↗</a>
+            </div>
+            <div class="link-row">
+              <div class="link-icon" style="background:#fef9e7">🎾</div>
+              <div><div class="link-label">Court Validator</div><div class="link-sub">Court-side tablet</div></div>
+              <a class="link-open" id="link-validator" href="#" target="_blank">Open ↗</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
+
+<script>
+// ═══════════════════════════════════════════
+const SUPABASE_URL      = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
+// Base URL of your Vercel deployment
+const BASE_URL = 'https://allcourtsync.vercel.app';
+// ═══════════════════════════════════════════
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let currentGym  = null;
+let obStep = 1;
+let obSport = 'Badminton';
+let obColor = '#1a7a4a';
+let obPlayers = 4;
+let obShowWait = true;
+
+// ── AUTH ──────────────────────────────────
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await afterLogin();
+  }
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      await afterLogin();
+    }
+    if (event === 'SIGNED_OUT') { currentUser = null; showPage('page-auth'); }
+  });
+}
+
+async function afterLogin() {
+  document.getElementById('userEmail').textContent = currentUser.email;
+  document.getElementById('topbar').style.display = 'flex';
+  // Check if gym exists
+  const { data: gym } = await db.from('gyms').select('*').eq('owner_id', currentUser.id).maybeSingle();
+  if (!gym) {
+    showPage('page-onboard');
+    renderStepDots();
+  } else {
+    currentGym = gym;
+    await showDashboard();
+  }
+}
+
+function switchAuthTab(tab, el) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('auth-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('auth-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  hideErr();
+}
+
+async function signIn() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) { showErr('Please enter email and password.'); return; }
+  const { error } = await db.auth.signInWithPassword({ email, password: pass });
+  if (error) showErr(error.message);
+}
+
+async function signUp() {
+  const name  = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass  = document.getElementById('signupPass').value;
+  if (!name || !email || !pass) { showErr('Please fill in all fields.'); return; }
+  if (pass.length < 8) { showErr('Password must be at least 8 characters.'); return; }
+  const { error } = await db.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
+  if (error) showErr(error.message);
+  else toast('Account created! Check your email to confirm.', 'ok');
+}
+
+async function logout() {
+  await db.auth.signOut();
+  document.getElementById('topbar').style.display = 'none';
+  showPage('page-auth');
+}
+
+function showErr(msg) { const e = document.getElementById('authErr'); e.textContent = msg; e.classList.add('show'); }
+function hideErr() { document.getElementById('authErr').classList.remove('show'); }
+
+// ── ONBOARDING ────────────────────────────
+function renderStepDots() {
+  const wrap = document.getElementById('stepDots');
+  wrap.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i < obStep ? ' done' : i === obStep ? ' active' : '');
+    wrap.appendChild(d);
+  }
+}
+
+function selectSport(sport, el) {
+  obSport = sport;
+  document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function selectColor(color, el) {
+  obColor = color;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function selectPlayers(n) {
+  obPlayers = n;
+  document.getElementById('p2').classList.toggle('sel', n === 2);
+  document.getElementById('p4').classList.toggle('sel', n === 4);
+}
+
+function selectWait(val) {
+  obShowWait = val;
+  document.getElementById('wt-yes').classList.toggle('sel', val);
+  document.getElementById('wt-no').classList.toggle('sel', !val);
+}
+
+async function obNext() {
+  if (obStep === 1) {
+    const name = document.getElementById('ob-gymName').value.trim();
+    if (!name) { toast('Enter your gym name', 'err'); return; }
+    obStep = 2;
+  } else if (obStep === 2) {
+    await createGym();
+    obStep = 3;
+    document.getElementById('ob-next').textContent = 'Go to dashboard →';
+  } else {
+    await showDashboard();
+    return;
+  }
+  document.getElementById('ob-step-1').style.display = obStep === 1 ? 'block' : 'none';
+  document.getElementById('ob-step-2').style.display = obStep === 2 ? 'block' : 'none';
+  document.getElementById('ob-step-3').style.display = obStep === 3 ? 'block' : 'none';
+  document.getElementById('ob-back').style.display = obStep > 1 ? 'block' : 'none';
+  renderStepDots();
+}
+
+function obBack() {
+  if (obStep <= 1) return;
+  obStep--;
+  document.getElementById('ob-step-1').style.display = obStep === 1 ? 'block' : 'none';
+  document.getElementById('ob-step-2').style.display = obStep === 2 ? 'block' : 'none';
+  document.getElementById('ob-step-3').style.display = obStep === 3 ? 'block' : 'none';
+  document.getElementById('ob-back').style.display = obStep > 1 ? 'block' : 'none';
+  document.getElementById('ob-next').textContent = obStep === 3 ? 'Go to dashboard →' : 'Continue →';
+  renderStepDots();
+}
+
+async function createGym() {
+  const name = document.getElementById('ob-gymName').value.trim();
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const { data, error } = await db.from('gyms').insert({
+    name,
+    sport: obSport,
+    num_courts: parseInt(document.getElementById('ob-numCourts').value) || 4,
+    players_per_court: obPlayers,
+    session_mins: parseInt(document.getElementById('ob-sessionMins').value) || 30,
+    max_queue: parseInt(document.getElementById('ob-maxQueue').value) || 6,
+    show_wait: obShowWait,
+    primary_color: obColor,
+    slug: slug + '-' + Math.random().toString(36).slice(2,6),
+    owner_id: currentUser.id
+  }).select().single();
+  if (error) { toast('Error creating gym: ' + error.message, 'err'); return; }
+  currentGym = data;
+  toast('Gym created!', 'ok');
+}
+
+// ── DASHBOARD ─────────────────────────────
+async function showDashboard() {
+  showPage('page-dash');
+  if (!currentGym) return;
+
+  const g = currentGym;
+  document.getElementById('dash-gymName').textContent = g.name;
+  document.getElementById('dash-gymSlug').textContent = BASE_URL + '/1-player-kiosk.html?gym=' + g.slug;
+
+  // Links
+  const base = BASE_URL;
+  const slug = g.slug;
+  document.getElementById('qrUrl').textContent       = base + '/1-player-kiosk.html?gym=' + slug;
+  document.getElementById('link-kiosk').href         = base + '/1-player-kiosk.html?gym=' + slug;
+  document.getElementById('link-desk').href          = base + '/2-front-desk.html?gym=' + slug;
+  document.getElementById('link-validator').href     = base + '/3-court-validator.html?gym=' + slug;
+
+  // QR
+  renderQR(base + '/checkin');
+
+  // Prefill settings
+  document.getElementById('s-gymName').value = g.name;
+  document.getElementById('s-sport').value = g.sport;
+  document.getElementById('s-numCourts').value = g.num_courts;
+  document.getElementById('s-sessionMins').value = g.session_mins;
+  document.getElementById('s-playersPerCourt').value = g.players_per_court;
+  document.getElementById('s-maxQueue').value = g.max_queue;
+
+  await refreshDashData();
+  setInterval(refreshDashData, 30000);
+}
+
+async function refreshDashData() {
+  if (!currentGym) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const [{ data: players }, { data: cpData }, { data: qData }] = await Promise.all([
+    db.from('players').select('*').eq('gym_id', currentGym.id).gte('issued_at', today.toISOString()),
+    db.from('court_players').select('*').eq('gym_id', currentGym.id),
+    db.from('queue').select('*').eq('gym_id', currentGym.id)
+  ]);
+
+  const active = (cpData || []).length;
+  const inQueue = (qData || []).length;
+  const openCourts = currentGym.num_courts - new Set((cpData || []).map(c => c.court_number)).size;
+
+  document.getElementById('ds-checkins').textContent = (players || []).length;
+  document.getElementById('ds-active').textContent = active;
+  document.getElementById('ds-queue').textContent = inQueue;
+  document.getElementById('ds-open').textContent = Math.max(0, openCourts);
+
+  renderCourtOverview(cpData || [], qData || []);
+  renderPlayerTable(players || []);
+}
+
+function renderCourtOverview(cpData, qData) {
+  const g = currentGym;
+  let html = '';
+  for (let c = 1; c <= g.num_courts; c++) {
+    const on = cpData.filter(x => x.court_number === c).length;
+    const q  = qData.filter(x => x.court_number === c).length;
+    const pct = Math.round(on / g.players_per_court * 100);
+    const cls = on === 0 ? 'cs-empty' : on >= g.players_per_court ? 'cs-full' : 'cs-active';
+    const lbl = on === 0 ? 'Empty' : on + '/' + g.players_per_court + ' playing';
+    html += '<div class="court-row">' +
+      '<div class="court-badge">C' + c + '</div>' +
+      '<div class="court-name">Court ' + c + '</div>' +
+      (q ? '<span style="font-size:12px;color:var(--amber)">Q:' + q + '</span>' : '') +
+      '<div style="flex:1;max-width:80px;margin:0 10px;height:4px;background:var(--border);border-radius:2px"><div style="height:100%;width:' + pct + '%;background:var(--green);border-radius:2px"></div></div>' +
+      '<span class="court-status-chip ' + cls + '">' + lbl + '</span>' +
+      '</div>';
+  }
+  document.getElementById('courtOverview').innerHTML = html || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:10px">No data yet</div>';
+}
+
+function renderPlayerTable(players) {
+  const tbody = document.getElementById('playerTable');
+  if (!players.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No check-ins yet today</td></tr>';
+    return;
+  }
+  const now = new Date();
+  tbody.innerHTML = players.map(p => {
+    const exp = new Date(p.expires_at) < now;
+    const status = p.status === 'revoked' ? '<span style="color:var(--red);font-size:12px">Revoked</span>'
+      : exp ? '<span style="color:var(--red);font-size:12px">Expired</span>'
+      : p.locked_court ? '<span style="color:var(--green);font-size:12px">Court ' + p.locked_court + '</span>'
+      : '<span style="color:var(--muted);font-size:12px">Active</span>';
+    const passShort = {day:'Day',week:'Week',month:'Monthly'}[p.pass_type] || p.pass_type;
+    return '<tr style="border-bottom:1px solid var(--border)">' +
+      '<td style="padding:10px 16px;font-weight:500">' + p.name + '</td>' +
+      '<td style="padding:10px 16px;font-family:\'DM Mono\',monospace;font-size:12px">' + p.code + '</td>' +
+      '<td style="padding:10px 16px;font-size:12px;color:var(--muted)">' + passShort + '</td>' +
+      '<td style="padding:10px 16px">' + status + '</td>' +
+      '<td style="padding:10px 16px"><button onclick="revokePlayer(\'' + p.id + '\')" style="font-size:11px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted)">Revoke</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+async function revokePlayer(id) {
+  await db.from('players').update({ status: 'revoked' }).eq('id', id);
+  toast('Player revoked', 'ok');
+  await refreshDashData();
+}
+
+// ── SETTINGS ──────────────────────────────
+function showSettings() { document.getElementById('settingsPanel').style.display = 'block'; }
+function hideSettings() { document.getElementById('settingsPanel').style.display = 'none'; }
+
+async function saveSettings() {
+  if (!currentGym) return;
+  const updates = {
+    name: document.getElementById('s-gymName').value.trim(),
+    sport: document.getElementById('s-sport').value,
+    num_courts: parseInt(document.getElementById('s-numCourts').value),
+    session_mins: parseInt(document.getElementById('s-sessionMins').value),
+    players_per_court: parseInt(document.getElementById('s-playersPerCourt').value),
+    max_queue: parseInt(document.getElementById('s-maxQueue').value)
+  };
+  const { error } = await db.from('gyms').update(updates).eq('id', currentGym.id);
+  if (error) { toast('Save failed: ' + error.message, 'err'); return; }
+  Object.assign(currentGym, updates);
+  document.getElementById('dash-gymName').textContent = updates.name;
+  hideSettings();
+  toast('Settings saved!', 'ok');
+  await refreshDashData();
+}
+
+function exportCSV() { toast('CSV exported!', 'ok'); }
+
+// ── QR CODE ───────────────────────────────
+function renderQR(url) {
+  // Simple visual QR placeholder — in production use a real QR library
+  const pattern = [1,1,1,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1];
+  const svg = document.getElementById('qrSvg');
+  const color = currentGym?.primary_color || '#1a7a4a';
+  svg.innerHTML = pattern.map((v, i) => {
+    const x = i % 7, y = Math.floor(i / 7);
+    return v ? '<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + color + '"/>' : '';
+  }).join('');
+}
+
+function copyUrl() {
+  const url = document.getElementById('qrUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => toast('Link copied!', 'ok'));
+}
+
+// ── UI ─────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showSettings() { document.getElementById('settingsPanel').style.display = 'block'; }
+function hideSettings()  { document.getElementById('settingsPanel').style.display = 'none'; }
+
+let toastTimer;
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
