@@ -288,6 +288,13 @@ svg.qr{width:120px;height:120px;shape-rendering:crispEdges}
               </div>
               <div class="s-field"><label>Max queue</label><input type="number" id="s-queue" min="2" max="20"></div>
             </div>
+            <div class="s-row">
+              <div class="s-field"><label>Day pass fee ($)</label><input type="number" id="s-dayfee" step="0.5" value="18"></div>
+              <div class="s-field"><label>Week pass fee ($)</label><input type="number" id="s-weekfee" step="0.5" value="49"></div>
+            </div>
+            <div class="s-row">
+              <div class="s-field"><label>Month pass fee ($)</label><input type="number" id="s-monthfee" step="0.5" value="129"></div>
+            </div>
             <button class="btn-save" onclick="saveSettings()">Save changes</button>
           </div>
         </div>
@@ -371,20 +378,10 @@ const sb = createClient(SB_URL, SB_KEY);
 let GYM  = null; // the current gym object — set once after login
 let USER = null;
 
-// Check for existing session on page load
-sb.auth.getSession().then(async ({ data: { session } }) => {
-  if (session) {
-    USER = session.user;
-    document.getElementById('userLbl').textContent = USER.email;
-    document.getElementById('topbar').classList.add('show');
-    await loadGym();
-  }
-});
-
-// Listen for sign in / sign out events
+// onAuthStateChange is the single source of truth for session
 sb.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN') {
-    if (!session || USER) return; // skip if already handled by getSession
+  if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+    if (!session) return;
     USER = session.user;
     document.getElementById('userLbl').textContent = USER.email;
     document.getElementById('topbar').classList.add('show');
@@ -522,6 +519,9 @@ async function createGym() {
     players_per_court: obPlayers,
     session_mins: mins,
     max_queue: queue,
+    day_fee: 18,
+    week_fee: 49,
+    month_fee: 129,
   }).select().single();
 
   if (error) { toast('Error: ' + error.message, 'err'); return; }
@@ -560,6 +560,9 @@ function renderDashboard() {
   document.getElementById('s-mins').value   = g.session_mins;
   document.getElementById('s-ppc').value    = g.players_per_court;
   document.getElementById('s-queue').value  = g.max_queue;
+  document.getElementById('s-dayfee').value   = g.day_fee ?? 18;
+  document.getElementById('s-weekfee').value  = g.week_fee ?? 49;
+  document.getElementById('s-monthfee').value = g.month_fee ?? 129;
 
   // Load live data
   refreshLive();
@@ -641,6 +644,9 @@ async function saveSettings() {
     session_mins:     parseInt(document.getElementById('s-mins').value),
     players_per_court:parseInt(document.getElementById('s-ppc').value),
     max_queue:        parseInt(document.getElementById('s-queue').value),
+    day_fee:          parseFloat(document.getElementById('s-dayfee').value) || 18,
+    week_fee:         parseFloat(document.getElementById('s-weekfee').value) || 49,
+    month_fee:        parseFloat(document.getElementById('s-monthfee').value) || 129,
   };
   const { error } = await sb.from('gyms').update(updates).eq('id', GYM.id);
   if (error) { toast('Save failed: '+error.message,'err'); return; }
