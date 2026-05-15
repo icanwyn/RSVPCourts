@@ -5,84 +5,59 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP Courts — Owner Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#f4f6f3;color:#0d1a0f}
-.topbar{display:none;background:white;border-bottom:1px solid #e0e8e0;padding:0 24px;height:56px;align-items:center;justify-content:space-between}
-.topbar.show{display:flex}
-.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#1a7a4a}
-.dashboard{max-width:1100px;margin:40px auto;padding:0 24px}
-h1{font-family:'Syne',sans-serif;font-size:32px;margin-bottom:8px}
-.card{background:white;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.06);margin-bottom:24px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
-.tool-card{border:1px solid #e0e8e0;border-radius:12px;padding:20px;transition:all 0.2s}
-.tool-card:hover{border-color:#1a7a4a;transform:translateY(-2px)}
-.tool-card h3{margin-bottom:8px;color:#1a7a4a}
-.tool-card p{color:#666;font-size:14px;margin-bottom:16px}
-.btn{display:inline-block;padding:10px 20px;background:#1a7a4a;color:white;text-decoration:none;border-radius:8px;font-weight:600}
-.btn.red{background:#c0392b}
-.link-box{background:#f8f9fa;padding:12px;border-radius:8px;font-family:monospace;font-size:13px;word-break:break-all;margin:12px 0}
+body { font-family: system-ui, sans-serif; background: #f4f6f3; padding: 40px; }
+.card { background: white; padding: 30px; border-radius: 16px; max-width: 900px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+h1 { font-size: 28px; margin-bottom: 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 30px; }
+.tool { border: 1px solid #ddd; border-radius: 12px; padding: 20px; }
+.tool h3 { color: #1a7a4a; margin-bottom: 8px; }
+.link { background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 12px 0; word-break: break-all; }
+button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-green { background: #1a7a4a; color: white; }
+.btn-red { background: #c0392b; color: white; }
+.topbar { display: none; margin-bottom: 30px; }
 </style>
 </head>
 <body>
 
-<!-- Top Bar -->
 <div class="topbar" id="topbar">
-  <div class="logo">RSVP Courts</div>
-  <div>
-    <span id="userEmail" style="margin-right:20px"></span>
-    <button onclick="forceLogout()" style="background:#c0392b;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer">Sign Out</button>
-  </div>
+  Logged in as: <strong id="userEmail"></strong>
+  <button onclick="forceLogout()" class="btn-red" style="margin-left: 20px;">Sign Out</button>
 </div>
 
-<!-- Dashboard -->
-<div class="dashboard" id="dashboard" style="display:none">
-  <h1 id="gymName">Loading...</h1>
-  <p id="gymSlug" style="color:#666;margin-bottom:30px"></p>
-
-  <div class="grid">
-
-    <!-- Player Kiosk -->
-    <div class="tool-card">
-      <h3>📱 Player Kiosk</h3>
-      <p>Players enter their name and get a check-in code.</p>
-      <div class="link-box" id="kioskLink"></div>
-      <a href="#" id="kioskBtn" target="_blank" class="btn">Open Player Kiosk</a>
-      <button onclick="copyLink('kioskLink')" style="margin-left:10px;padding:10px 16px">Copy</button>
-    </div>
-
-    <!-- Front Desk -->
-    <div class="tool-card">
-      <h3>🖥️ Front Desk</h3>
-      <p>Staff approve payments and issue codes.</p>
-      <div class="link-box" id="frontdeskLink"></div>
-      <a href="#" id="frontdeskBtn" target="_blank" class="btn">Open Front Desk</a>
-      <button onclick="copyLink('frontdeskLink')" style="margin-left:10px;padding:10px 16px">Copy</button>
-    </div>
-
-    <!-- Court Validator -->
-    <div class="tool-card">
-      <h3>🎾 Court Validator</h3>
-      <p>Players enter code at court to join or queue.</p>
-      <div class="link-box" id="validatorLink"></div>
-      <a href="#" id="validatorBtn" target="_blank" class="btn">Open Court Validator</a>
-      <button onclick="copyLink('validatorLink')" style="margin-left:10px;padding:10px 16px">Copy</button>
-    </div>
-
-  </div>
-
-  <div style="margin-top:40px">
-    <button onclick="goToSettings()" style="padding:12px 24px">⚙ Manage Settings</button>
-  </div>
-</div>
-
-<!-- Onboarding -->
-<div id="onboarding" style="display:none; max-width:500px; margin:60px auto; text-align:center">
+<div id="content">
   <div class="card">
-    <h2>Create your first gym</h2>
-    <input type="text" id="gymNameInput" placeholder="Gym Name" style="width:100%;padding:12px;margin:20px 0;border:1px solid #ccc;border-radius:8px">
-    <button onclick="createGym()" class="btn" style="width:100%">Create Gym</button>
+    <h1 id="gymTitle">Loading...</h1>
+    <p id="gymSlug"></p>
+
+    <div class="grid">
+
+      <div class="tool">
+        <h3>📱 Player Kiosk</h3>
+        <p>Players check in and get a code.</p>
+        <div class="link" id="kioskLink"></div>
+        <button class="btn-green" onclick="openLink('kiosk')">Open</button>
+        <button onclick="copyLink('kioskLink')">Copy</button>
+      </div>
+
+      <div class="tool">
+        <h3>🖥️ Front Desk</h3>
+        <p>Approve payments &amp; issue codes.</p>
+        <div class="link" id="frontdeskLink"></div>
+        <button class="btn-green" onclick="openLink('frontdesk')">Open</button>
+        <button onclick="copyLink('frontdeskLink')">Copy</button>
+      </div>
+
+      <div class="tool">
+        <h3>🎾 Court Validator</h3>
+        <p>Players join courts here.</p>
+        <div class="link" id="validatorLink"></div>
+        <button class="btn-green" onclick="openLink('validator')">Open</button>
+        <button onclick="copyLink('validatorLink')">Copy</button>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -92,93 +67,76 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null;
-let currentGym = null;
+let user = null;
+let gym = null;
 
 sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
-    currentUser = session.user;
-    document.getElementById('userEmail').textContent = currentUser.email;
-    document.getElementById('topbar').classList.add('show');
-    await loadGym();
+    user = session.user;
+    document.getElementById('userEmail').textContent = user.email;
+    document.getElementById('topbar').style.display = 'block';
+    await loadMyGym();
   } else {
     window.location.reload();
   }
 });
 
-async function loadGym() {
-  const { data } = await sb.from('gyms').select('*').eq('owner_id', currentUser.id).maybeSingle();
+async function loadMyGym() {
+  const { data, error } = await sb
+    .from('gyms')
+    .select('*')
+    .eq('owner_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    document.getElementById('gymTitle').textContent = 'Error loading gym';
+    console.error(error);
+    return;
+  }
 
   if (data) {
-    currentGym = data;
+    gym = data;
     showDashboard();
   } else {
-    document.getElementById('onboarding').style.display = 'block';
+    document.getElementById('gymTitle').textContent = 'No gym found. Please create one.';
   }
 }
 
 function showDashboard() {
-  document.getElementById('dashboard').style.display = 'block';
-  document.getElementById('gymName').textContent = currentGym.name;
-  document.getElementById('gymSlug').textContent = currentGym.slug;
+  document.getElementById('gymTitle').textContent = gym.name;
+  document.getElementById('gymSlug').textContent = gym.slug;
 
-  const base = 'https://rsvp-courts.vercel.app'; // Change this to your domain if different
+  const base = 'https://rsvp-courts.vercel.app';
 
-  const kiosk = `${base}/1-player-kiosk.html?gym=${currentGym.slug}`;
-  const front = `${base}/2-front-desk.html?gym=${currentGym.slug}`;
-  const validator = `${base}/3-court-validator.html?gym=${currentGym.slug}`;
+  const k = `${base}/1-player-kiosk.html?gym=${gym.slug}`;
+  const f = `${base}/2-front-desk.html?gym=${gym.slug}`;
+  const v = `${base}/3-court-validator.html?gym=${gym.slug}`;
 
-  document.getElementById('kioskLink').textContent = kiosk;
-  document.getElementById('frontdeskLink').textContent = front;
-  document.getElementById('validatorLink').textContent = validator;
+  document.getElementById('kioskLink').textContent = k;
+  document.getElementById('frontdeskLink').textContent = f;
+  document.getElementById('validatorLink').textContent = v;
 
-  document.getElementById('kioskBtn').href = kiosk;
-  document.getElementById('frontdeskBtn').href = front;
-  document.getElementById('validatorBtn').href = validator;
+  window.kioskUrl = k;
+  window.frontdeskUrl = f;
+  window.validatorUrl = v;
 }
 
-function copyLink(elementId) {
-  const text = document.getElementById(elementId).textContent;
+function openLink(type) {
+  if (type === 'kiosk') window.open(window.kioskUrl, '_blank');
+  if (type === 'frontdesk') window.open(window.frontdeskUrl, '_blank');
+  if (type === 'validator') window.open(window.validatorUrl, '_blank');
+}
+
+function copyLink(id) {
+  const text = document.getElementById(id).textContent;
   navigator.clipboard.writeText(text);
-  alert('Link copied to clipboard!');
-}
-
-async function createGym() {
-  const name = document.getElementById('gymNameInput').value.trim();
-  if (!name) return alert('Please enter a gym name');
-
-  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36).slice(-5);
-
-  const { data, error } = await sb.from('gyms').insert({
-    owner_id: currentUser.id,
-    name,
-    slug,
-    num_courts: 4,
-    players_per_court: 4,
-    session_mins: 30,
-    day_fee: 18,
-    week_fee: 49,
-    month_fee: 129
-  }).select().single();
-
-  if (error) {
-    alert('Error creating gym: ' + error.message);
-    return;
-  }
-
-  currentGym = data;
-  document.getElementById('onboarding').style.display = 'none';
-  showDashboard();
+  alert('Link copied!');
 }
 
 function forceLogout() {
   sb.auth.signOut({ scope: 'global' });
   localStorage.clear();
   location.reload();
-}
-
-function goToSettings() {
-  alert('Settings page coming soon. You can manage fees, courts, etc. from here later.');
 }
 </script>
 </body>
