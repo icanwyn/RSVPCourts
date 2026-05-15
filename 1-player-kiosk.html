@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,9 +143,13 @@ async function submitRequest() {
   const name = document.getElementById('nameInput').value.trim();
   const pass = document.getElementById('passInput').value;
   if (!GYM) { toast('Not connected to a gym', true); return; }
+
+  // Use PENDING-{timestamp} so each row is unique until desk approves
+  const tempCode = 'PENDING-' + Date.now();
+
   const { data, error } = await sb.from('players').insert({
     gym_id: GYM.id, name, pass_type: pass,
-    code: 'PENDING', status: 'pending', expires_at: expiryFor(pass)
+    code: tempCode, status: 'pending', expires_at: expiryFor(pass)
   }).select().single();
   if (error) { toast('Error: ' + error.message, true); return; }
   playerId = data.id;
