@@ -5,53 +5,84 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP Courts — Owner Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-body { font-family: system-ui; background: #f4f6f3; padding: 40px; }
-.card { background: white; padding: 30px; border-radius: 16px; max-width: 400px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
-button { width: 100%; padding: 14px; background: #1a7a4a; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-.hidden { display: none; }
-.error { color: red; background: #fee; padding: 10px; border-radius: 8px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#f4f6f3;color:#0d1a0f}
+.topbar{display:none;background:white;border-bottom:1px solid #e0e8e0;padding:0 24px;height:56px;align-items:center;justify-content:space-between}
+.topbar.show{display:flex}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#1a7a4a}
+.dashboard{max-width:1100px;margin:40px auto;padding:0 24px}
+h1{font-family:'Syne',sans-serif;font-size:32px;margin-bottom:8px}
+.card{background:white;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.06);margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.tool-card{border:1px solid #e0e8e0;border-radius:12px;padding:20px;transition:all 0.2s}
+.tool-card:hover{border-color:#1a7a4a;transform:translateY(-2px)}
+.tool-card h3{margin-bottom:8px;color:#1a7a4a}
+.tool-card p{color:#666;font-size:14px;margin-bottom:16px}
+.btn{display:inline-block;padding:10px 20px;background:#1a7a4a;color:white;text-decoration:none;border-radius:8px;font-weight:600}
+.btn.red{background:#c0392b}
+.link-box{background:#f8f9fa;padding:12px;border-radius:8px;font-family:monospace;font-size:13px;word-break:break-all;margin:12px 0}
 </style>
 </head>
 <body>
 
-<div id="topbar" style="display:none; margin-bottom:20px;">
-  Logged in as: <span id="userEmail"></span>
-  <button onclick="forceLogout()" style="background:#c0392b; padding:8px 16px; margin-left:20px;">Force Sign Out</button>
-</div>
-
-<!-- Auth Screen -->
-<div id="auth-screen">
-  <div class="card">
-    <h2>RSVP Courts</h2>
-    <div id="error" class="error" style="display:none;"></div>
-
-    <input type="email" id="email" placeholder="Email" value="chuyenh@lasdschools.org">
-    <input type="password" id="password" placeholder="Password">
-
-    <button onclick="login()">Sign In</button>
-    <button onclick="signup()" style="background:#555;">Create Account</button>
+<!-- Top Bar -->
+<div class="topbar" id="topbar">
+  <div class="logo">RSVP Courts</div>
+  <div>
+    <span id="userEmail" style="margin-right:20px"></span>
+    <button onclick="forceLogout()" style="background:#c0392b;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer">Sign Out</button>
   </div>
 </div>
 
 <!-- Dashboard -->
-<div id="dashboard" class="hidden">
-  <div class="card">
-    <h2 id="gymName">Loading...</h2>
-    <p id="gymInfo"></p>
-    <div id="kioskLink" style="background:#f0f0f0; padding:12px; border-radius:8px; margin:20px 0; font-family:monospace;"></div>
-    <button onclick="copyLink()">Copy Kiosk Link</button>
-    <button onclick="forceLogout()" style="background:#c0392b; margin-top:20px;">Sign Out</button>
+<div class="dashboard" id="dashboard" style="display:none">
+  <h1 id="gymName">Loading...</h1>
+  <p id="gymSlug" style="color:#666;margin-bottom:30px"></p>
+
+  <div class="grid">
+
+    <!-- Player Kiosk -->
+    <div class="tool-card">
+      <h3>📱 Player Kiosk</h3>
+      <p>Players enter their name and get a check-in code.</p>
+      <div class="link-box" id="kioskLink"></div>
+      <a href="#" id="kioskBtn" target="_blank" class="btn">Open Player Kiosk</a>
+      <button onclick="copyLink('kioskLink')" style="margin-left:10px;padding:10px 16px">Copy</button>
+    </div>
+
+    <!-- Front Desk -->
+    <div class="tool-card">
+      <h3>🖥️ Front Desk</h3>
+      <p>Staff approve payments and issue codes.</p>
+      <div class="link-box" id="frontdeskLink"></div>
+      <a href="#" id="frontdeskBtn" target="_blank" class="btn">Open Front Desk</a>
+      <button onclick="copyLink('frontdeskLink')" style="margin-left:10px;padding:10px 16px">Copy</button>
+    </div>
+
+    <!-- Court Validator -->
+    <div class="tool-card">
+      <h3>🎾 Court Validator</h3>
+      <p>Players enter code at court to join or queue.</p>
+      <div class="link-box" id="validatorLink"></div>
+      <a href="#" id="validatorBtn" target="_blank" class="btn">Open Court Validator</a>
+      <button onclick="copyLink('validatorLink')" style="margin-left:10px;padding:10px 16px">Copy</button>
+    </div>
+
+  </div>
+
+  <div style="margin-top:40px">
+    <button onclick="goToSettings()" style="padding:12px 24px">⚙ Manage Settings</button>
   </div>
 </div>
 
 <!-- Onboarding -->
-<div id="onboarding" class="hidden">
+<div id="onboarding" style="display:none; max-width:500px; margin:60px auto; text-align:center">
   <div class="card">
-    <h2>Create your gym</h2>
-    <input type="text" id="newGymName" placeholder="Gym Name">
-    <button onclick="createGym()">Create Gym</button>
+    <h2>Create your first gym</h2>
+    <input type="text" id="gymNameInput" placeholder="Gym Name" style="width:100%;padding:12px;margin:20px 0;border:1px solid #ccc;border-radius:8px">
+    <button onclick="createGym()" class="btn" style="width:100%">Create Gym</button>
   </div>
 </div>
 
@@ -61,97 +92,83 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let user = null;
-let gym = null;
+let currentUser = null;
+let currentGym = null;
 
-sb.auth.onAuthStateChange((event, session) => {
-  console.log('Auth event:', event, session);
-  
+sb.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
-    user = session.user;
-    document.getElementById('userEmail').textContent = user.email;
-    document.getElementById('topbar').style.display = 'block';
-    loadGym();
+    currentUser = session.user;
+    document.getElementById('userEmail').textContent = currentUser.email;
+    document.getElementById('topbar').classList.add('show');
+    await loadGym();
   } else {
-    showScreen('auth-screen');
-    document.getElementById('topbar').style.display = 'none';
+    window.location.reload();
   }
 });
 
-async function login() {
-  const email = document.getElementById('email').value;
-  const pass = document.getElementById('password').value;
-
-  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) showError(error.message);
-}
-
-async function signup() {
-  const email = document.getElementById('email').value;
-  const pass = document.getElementById('password').value;
-  const { error } = await sb.auth.signUp({ email, password: pass });
-  if (error) showError(error.message);
-  else alert('Check your email to confirm account');
-}
-
 async function loadGym() {
-  console.log('Loading gym for user:', user.id);
-
-  const { data, error } = await sb
-    .from('gyms')
-    .select('*')
-    .eq('owner_id', user.id)
-    .maybeSingle();
-
-  console.log('Gym query result:', { data, error });
-
-  if (error) {
-    showError('Error loading gym: ' + error.message);
-    return;
-  }
+  const { data } = await sb.from('gyms').select('*').eq('owner_id', currentUser.id).maybeSingle();
 
   if (data) {
-    gym = data;
+    currentGym = data;
     showDashboard();
   } else {
-    showScreen('onboarding');
+    document.getElementById('onboarding').style.display = 'block';
   }
 }
 
 function showDashboard() {
-  document.getElementById('gymName').textContent = gym.name;
-  const link = `${location.origin}/1-player-kiosk.html?gym=${gym.slug}`;
-  document.getElementById('kioskLink').textContent = link;
-  showScreen('dashboard');
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('gymName').textContent = currentGym.name;
+  document.getElementById('gymSlug').textContent = currentGym.slug;
+
+  const base = 'https://rsvp-courts.vercel.app'; // Change this to your domain if different
+
+  const kiosk = `${base}/1-player-kiosk.html?gym=${currentGym.slug}`;
+  const front = `${base}/2-front-desk.html?gym=${currentGym.slug}`;
+  const validator = `${base}/3-court-validator.html?gym=${currentGym.slug}`;
+
+  document.getElementById('kioskLink').textContent = kiosk;
+  document.getElementById('frontdeskLink').textContent = front;
+  document.getElementById('validatorLink').textContent = validator;
+
+  document.getElementById('kioskBtn').href = kiosk;
+  document.getElementById('frontdeskBtn').href = front;
+  document.getElementById('validatorBtn').href = validator;
+}
+
+function copyLink(elementId) {
+  const text = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(text);
+  alert('Link copied to clipboard!');
 }
 
 async function createGym() {
-  const name = document.getElementById('newGymName').value.trim();
-  if (!name) return alert('Enter gym name');
+  const name = document.getElementById('gymNameInput').value.trim();
+  if (!name) return alert('Please enter a gym name');
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
+  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36).slice(-5);
 
   const { data, error } = await sb.from('gyms').insert({
-    owner_id: user.id,
+    owner_id: currentUser.id,
     name,
     slug,
     num_courts: 4,
     players_per_court: 4,
-    session_mins: 30
+    session_mins: 30,
+    day_fee: 18,
+    week_fee: 49,
+    month_fee: 129
   }).select().single();
 
   if (error) {
-    alert('Error: ' + error.message);
+    alert('Error creating gym: ' + error.message);
     return;
   }
 
-  gym = data;
+  currentGym = data;
+  document.getElementById('onboarding').style.display = 'none';
   showDashboard();
-}
-
-function copyLink() {
-  navigator.clipboard.writeText(document.getElementById('kioskLink').textContent);
-  alert('Link copied!');
 }
 
 function forceLogout() {
@@ -160,17 +177,8 @@ function forceLogout() {
   location.reload();
 }
 
-function showScreen(id) {
-  document.getElementById('auth-screen').classList.add('hidden');
-  document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('onboarding').classList.add('hidden');
-  document.getElementById(id).classList.remove('hidden');
-}
-
-function showError(msg) {
-  const el = document.getElementById('error');
-  el.textContent = msg;
-  el.style.display = 'block';
+function goToSettings() {
+  alert('Settings page coming soon. You can manage fees, courts, etc. from here later.');
 }
 </script>
 </body>
