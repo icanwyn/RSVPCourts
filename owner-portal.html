@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP Courts — Owner Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -109,7 +111,7 @@ html,body{min-height:100%;background:var(--bg);color:var(--dark);font-family:'DM
 .cc-full{background:var(--al);color:var(--amber)}
 
 /* QR & LINKS */
-.qr-wrap{border:2px solid var(--green);border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:10px}
+.qr-wrap{border:2px solid var(--green);border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:10px}.qr-wrap canvas{display:block;border-radius:6px}
 .url-box{font-family:'DM Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);padding:8px 11px;border-radius:8px;word-break:break-all;color:var(--muted);margin-bottom:8px}
 .btn-copy{width:100%;padding:9px;background:var(--gl);color:var(--green);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
 .btn-copy:hover{background:var(--green);color:#fff}
@@ -322,7 +324,7 @@ svg.qr{width:120px;height:120px;shape-rendering:crispEdges}
         <div class="panel" style="margin-bottom:14px">
           <div class="panel-head"><div class="panel-title">Player QR code</div></div>
           <div class="panel-body">
-            <div class="qr-wrap"><svg class="qr" id="qrSvg" viewBox="0 0 7 7" xmlns="http://www.w3.org/2000/svg"></svg></div>
+            <div class="qr-wrap"><canvas id="qrCanvas"></canvas></div>
             <div class="url-box" id="kioskUrl">—</div>
             <button class="btn-copy" onclick="copyKioskUrl()">📋 Copy player link</button>
           </div>
@@ -566,8 +568,8 @@ function renderDashboard() {
   document.getElementById('lnk-desk').href            = deskUrl;
   document.getElementById('lnk-court').href           = validatorUrl;
 
-  // QR code visual
-  renderQR(g.primary_color || '#1a7a4a');
+  // QR code
+  renderQR(kioskUrl, g.primary_color || '#1a7a4a');
 
   // Prefill settings form
   document.getElementById('s-name').value   = g.name;
@@ -671,13 +673,18 @@ async function saveSettings() {
 function exportCSV() { toast('CSV exported!','ok'); }
 
 // ── QR ───────────────────────────────────────────────────────
-function renderQR(color) {
-  const pat = [1,1,1,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1];
-  document.getElementById('qrSvg').innerHTML = pat.map((v,i) => {
-    if (!v) return '';
-    const x=i%7, y=Math.floor(i/7);
-    return '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+color+'"/>';
-  }).join('');
+function renderQR(url, color) {
+  const canvas = document.getElementById('qrCanvas');
+  QRCode.toCanvas(canvas, url, {
+    width: 160,
+    margin: 1,
+    color: {
+      dark: color || '#1a7a4a',
+      light: '#ffffff'
+    }
+  }, function(err) {
+    if (err) console.error('QR error:', err);
+  });
 }
 
 function copyKioskUrl() {
