@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RSVP Courts — Front Desk</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--green:#1a7a4a;--gl:#e6f5eb;--gm:#2d9e52;--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#2a3441;--text:#e6edf3;--muted:#7d8590;--red:#f85149;--rl:rgba(248,81,73,.15);--amber:#d29922;--al:rgba(210,153,34,.15);--blue:#58a6ff;--bl:rgba(88,166,255,.15)}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden}
+.shell{display:grid;grid-template-columns:1fr 340px;grid-template-rows:52px 1fr;height:100vh}
+.topbar{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:14px}
+.logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--green)}
+.gym-label{font-size:13px;font-weight:600;flex:1;text-align:center}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.b-green{background:rgba(63,185,80,.15);color:#3fb950}
+.b-amber{background:var(--al);color:var(--amber)}
+.b-red{background:var(--rl);color:var(--red)}
+.b-blue{background:var(--bl);color:var(--blue)}
+.b-muted{background:rgba(125,133,144,.12);color:var(--muted)}
+.b-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.clock{font-family:'DM Mono',monospace;font-size:13px;color:var(--text)}
+.main{overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.sidebar{border-left:1px solid var(--border);background:var(--panel);overflow-y:auto;display:flex;flex-direction:column}
+.sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:10px}
+.empty-state{background:var(--panel);border:1px dashed var(--border);border-radius:12px;padding:28px;text-align:center;color:var(--muted);font-size:13px}
+.req-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:slideIn .25s ease;margin-bottom:10px}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.req-card.urgent{border-color:rgba(210,153,34,.4)}
+.req-header{background:var(--panel2);padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.req-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto}
+.req-body{padding:12px 14px;display:flex;align-items:center;gap:12px}
+.avatar{width:40px;height:40px;border-radius:10px;background:var(--panel2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blue);flex-shrink:0;font-family:'DM Mono',monospace}
+.req-name{font-size:15px;font-weight:600}
+.req-pass{font-size:12px;color:var(--muted);margin-top:2px}
+.req-actions{display:flex;gap:7px;margin-left:auto}
+.btn-approve{padding:9px 14px;background:#3fb950;color:#000;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-approve:hover{background:#4ac85a}
+.btn-decline{padding:9px 12px;background:transparent;color:var(--red);border:1px solid rgba(248,81,73,.3);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-decline:hover{background:var(--rl)}
+.panel-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ph{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pt{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.pb{padding:14px}
+.ptable{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.ptable th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:9px 12px;border-bottom:1px solid var(--border);text-align:left;background:var(--panel2)}
+.ptable td{padding:9px 12px;border-bottom:1px solid rgba(42,52,65,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptable tr:last-child td{border-bottom:none}
+.ptable tr:hover td{background:rgba(255,255,255,.02)}
+.mono{font-family:'DM Mono',monospace;font-size:12px;font-weight:700}
+.btn-revoke{padding:3px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-revoke:hover{color:var(--red);border-color:rgba(248,81,73,.3)}
+.sb-sec{padding:14px;border-bottom:1px solid var(--border)}
+.sb-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0}
+.stat-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.stat-v{font-family:'DM Mono',monospace;font-size:22px;font-weight:700}
+.stat-l{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:2px}
+.c-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(42,52,65,.5);font-size:12px}
+.c-row:last-child{border-bottom:none}
+.c-num{width:26px;height:26px;border-radius:7px;background:rgba(63,185,80,.1);color:#3fb950;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace}
+.feed-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(42,52,65,.5);font-size:12px;color:var(--muted)}
+.feed-item:last-child{border-bottom:none}
+.fd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.fd-g{background:#3fb950}.fd-a{background:var(--amber)}.fd-r{background:var(--red)}
+.feed-txt{flex:1}
+.feed-txt strong{color:var(--text)}
+.feed-t{font-family:'DM Mono',monospace;font-size:10px;color:rgba(125,133,144,.6);white-space:nowrap}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(380px,92vw);animation:popIn .25s cubic-bezier(.34,1.2,.64,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+.modal-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px}
+.code-display{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center;margin-bottom:14px}
+.code-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-bottom:7px}
+.code-big{font-family:'DM Mono',monospace;font-size:40px;font-weight:700;color:#3fb950;letter-spacing:.1em;animation:codeIn .4s cubic-bezier(.34,1.5,.64,1)}
+@keyframes codeIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.code-name{font-size:13px;color:var(--muted);margin-top:5px}
+.modal-actions{display:flex;gap:8px}
+.btn-modal-close{flex:1;padding:10px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-modal-close:hover{background:var(--panel2)}
+.btn-modal-print{flex:1;padding:10px;background:#3fb950;color:#000;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(60px);background:#3fb950;color:#000;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:700;z-index:999;transition:transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red);color:#fff}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="logo">RSVP Courts</div>
+    <div class="gym-label" id="gymLabel">Front Desk</div>
+    <div class="badge b-green"><div class="b-dot"></div>Staff View</div>
+    <div class="badge b-muted" id="pendingBadge">0 pending</div>
+    <div class="clock" id="clock"></div>
+  </div>
+
+  <div class="main">
+    <div>
+      <div class="sec-title">Incoming requests</div>
+      <div id="pendingList"><div class="empty-state">📭 No pending requests — player requests appear here in real time</div></div>
+    </div>
+    <div>
+      <div class="sec-title">Codes issued today</div>
+      <div class="panel-box">
+        <table class="ptable">
+          <thead><tr><th style="width:30%">Player</th><th style="width:22%">Code</th><th style="width:16%">Pass</th><th style="width:16%">Status</th><th style="width:16%"></th></tr></thead>
+          <tbody id="issuedTable"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No codes issued yet today</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sb-sec">
+      <div class="sb-title">Stats</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-v" id="st-ci">0</div><div class="stat-l">Check-ins</div></div>
+        <div class="stat-box"><div class="stat-v" id="st-ac">0</div><div class="stat-l">On courts</div></div>
+        <div class="stat-box"><div class="stat-v" id="st-op">0</div><div class="stat-l">Open courts</div></div>
+        <div class="stat-box"><div class="stat-v" id="st-qu">0</div><div class="stat-l">In queue</div></div>
+      </div>
+    </div>
+    <div class="sb-sec" style="flex:1">
+      <div class="sb-title">Courts live</div>
+      <div id="courtList"></div>
+    </div>
+    <div class="sb-sec" style="flex:1">
+      <div class="sb-title">Activity</div>
+      <div id="actFeed"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="codeModal">
+  <div class="modal">
+    <div class="modal-title">✓ Code issued — show to player</div>
+    <div class="code-display">
+      <div class="code-lbl">Check-in code</div>
+      <div class="code-big" id="modal-code">——</div>
+      <div class="code-name" id="modal-name">—</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-close" onclick="closeModal()">Done — next player</button>
+      <button class="btn-modal-print" onclick="toast('Printing…');closeModal()">🖨 Print slip</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
+const GYM_SLUG = new URLSearchParams(window.location.search).get('gym');
+const ANIMALS = ['TIGER','EAGLE','HAWK','WOLF','BEAR','LION','FALCON','SHARK','PUMA','OWL','PANTHER','VIPER','LYNX','CRANE','BISON','FINCH','GECKO','HYENA','IBIS','DINGO'];
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+let GYM = null;
+let pending = [];
+let issued  = [];
+let usedAnimals = new Set();
+let feed = [];
+
+async function init() {
+  updateClock(); setInterval(updateClock, 1000);
+
+  if (!GYM_SLUG) { document.getElementById('gymLabel').textContent = 'No gym — add ?gym=slug to URL'; return; }
+
+  const { data, error } = await sb.from('gyms').select('*').eq('slug', GYM_SLUG).maybeSingle();
+  if (error || !data) { document.getElementById('gymLabel').textContent = 'Gym not found: ' + GYM_SLUG; return; }
+  GYM = data;
+  document.getElementById('gymLabel').textContent = GYM.name;
+  document.title = GYM.name + ' — Front Desk';
+
+  await loadIssuedToday();
+  await refreshStats();
+  subscribeRealtime();
+  setInterval(refreshStats, 20000);
+}
+
+async function loadIssuedToday() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const { data } = await sb.from('players').select('*').eq('gym_id', GYM.id).neq('status','pending').gte('issued_at', today.toISOString()).order('issued_at', {ascending:false});
+  issued = data || [];
+  issued.forEach(p => usedAnimals.add(p.code.replace(/[0-9]/g,'')));
+  renderIssuedTable();
+}
+
+function subscribeRealtime() {
+  sb.channel('desk-' + GYM.id)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players' }, ({ new: p }) => {
+      if (p.gym_id !== GYM.id || p.status !== 'pending') return;
+      pending.unshift(p);
+      renderPending();
+      addFeed('a', '<strong>' + p.name + '</strong> requested a ' + passLabel(p.pass_type));
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'players' }, ({ new: p }) => {
+      if (p.gym_id !== GYM.id) return;
+      const idx = issued.findIndex(x => x.id === p.id);
+      if (idx >= 0) issued[idx] = p; else if (p.status !== 'pending') issued.unshift(p);
+      renderIssuedTable();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'court_players' }, () => refreshStats())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => refreshStats())
+    .subscribe();
+}
+
+function generateCode() {
+  const avail = ANIMALS.filter(a => !usedAnimals.has(a));
+  const animal = avail.length ? avail[Math.floor(Math.random()*avail.length)] : ANIMALS[Math.floor(Math.random()*ANIMALS.length)];
+  const num = String(Math.floor(Math.random()*97)+2).padStart(2,'0');
+  return animal + num;
+}
+
+async function approve(playerId) {
+  const p = pending.find(x => x.id === playerId);
+  if (!p) return;
+  const code = generateCode();
+  usedAnimals.add(code.replace(/[0-9]/g,''));
+  const { error } = await sb.from('players').update({ code, status: 'active', issued_at: new Date().toISOString() }).eq('id', playerId);
+  if (error) { toast('Error: ' + error.message, true); return; }
+  pending = pending.filter(x => x.id !== playerId);
+  const updated = { ...p, code, status: 'active' };
+  issued.unshift(updated);
+  renderPending();
+  renderIssuedTable();
+  showCodeModal(updated);
+  addFeed('g', '<strong>' + p.name + '</strong> issued code <strong>' + code + '</strong>');
+}
+
+async function decline(playerId) {
+  const p = pending.find(x => x.id === playerId);
+  if (!p) return;
+  await sb.from('players').update({ status: 'revoked' }).eq('id', playerId);
+  pending = pending.filter(x => x.id !== playerId);
+  renderPending();
+  addFeed('r', '<strong>' + p.name + '</strong> request declined');
+  toast('Request declined');
+}
+
+async function revokeIssued(playerId) {
+  await sb.from('players').update({ status: 'revoked' }).eq('id', playerId);
+  const p = issued.find(x => x.id === playerId);
+  if (p) { p.status = 'revoked'; renderIssuedTable(); addFeed('r', '<strong>' + p.name + '</strong> code revoked'); }
+  toast('Code revoked');
+}
+
+function renderPending() {
+  const el = document.getElementById('pendingList');
+  const badge = document.getElementById('pendingBadge');
+  badge.textContent = pending.length + ' pending';
+  badge.className = 'badge ' + (pending.length ? 'b-amber' : 'b-muted');
+  if (!pending.length) { el.innerHTML = '<div class="empty-state">📭 No pending requests — player requests appear here in real time</div>'; return; }
+  el.innerHTML = pending.map((p, i) => `
+    <div class="req-card ${i===0?'urgent':''}">
+      <div class="req-header">
+        <div class="badge ${i===0?'b-amber':'b-muted'}">${i===0?'Next up':'Waiting'}</div>
+        <div class="req-time">${relTime(p.issued_at)}</div>
+      </div>
+      <div class="req-body">
+        <div class="avatar">${initials(p.name)}</div>
+        <div><div class="req-name">${p.name}</div><div class="req-pass">${passLabel(p.pass_type)}</div></div>
+        <div class="req-actions">
+          <button class="btn-approve" onclick="approve('${p.id}')">✓ Confirm &amp; Issue</button>
+          <button class="btn-decline" onclick="decline('${p.id}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderIssuedTable() {
+  const tbody = document.getElementById('issuedTable');
+  const now = new Date();
+  if (!issued.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No codes issued yet today</td></tr>'; return; }
+  tbody.innerHTML = issued.map(p => {
+    const exp = new Date(p.expires_at) < now;
+    const statusHtml = p.status==='revoked' ? '<span class="badge b-red">Revoked</span>'
+      : exp ? '<span class="badge b-red">Expired</span>'
+      : p.locked_court ? '<span class="badge b-blue">Court '+p.locked_court+'</span>'
+      : '<span class="badge b-green">Active</span>';
+    const pt = {day:'Day',week:'Week',month:'Monthly'}[p.pass_type]||p.pass_type;
+    const canRevoke = p.status==='active' && !exp;
+    return `<tr><td title="${p.name}">${p.name}</td><td><span class="mono">${p.code}</span></td><td style="color:var(--muted)">${pt}</td><td>${statusHtml}</td><td>${canRevoke?`<button class="btn-revoke" onclick="revokeIssued('${p.id}')">Revoke</button>`:'—'}</td></tr>`;
+  }).join('');
+}
+
+async function refreshStats() {
+  if (!GYM) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const [r1,r2,r3] = await Promise.all([
+    sb.from('players').select('id').eq('gym_id',GYM.id).neq('status','pending').gte('issued_at',today.toISOString()),
+    sb.from('court_players').select('court_number').eq('gym_id',GYM.id),
+    sb.from('queue').select('court_number').eq('gym_id',GYM.id),
+  ]);
+  const cp = r2.data||[], q = r3.data||[];
+  const usedCourts = new Set(cp.map(x=>x.court_number)).size;
+  document.getElementById('st-ci').textContent = (r1.data||[]).length;
+  document.getElementById('st-ac').textContent = cp.length;
+  document.getElementById('st-op').textContent = Math.max(0,GYM.num_courts-usedCourts);
+  document.getElementById('st-qu').textContent = q.length;
+  // Court list
+  let html='';
+  for(let c=1;c<=GYM.num_courts;c++){
+    const on=cp.filter(x=>x.court_number===c).length;
+    const qi=q.filter(x=>x.court_number===c).length;
+    const pct=Math.round(on/GYM.players_per_court*100);
+    const col=on===0?'var(--muted)':on>=GYM.players_per_court?'var(--amber)':'#3fb950';
+    html+=`<div class="c-row"><div class="c-num">C${c}</div><span style="flex:1">Court ${c} — ${on}/${GYM.players_per_court}</span>${qi?`<span style="font-size:11px;color:var(--amber)">Q:${qi}</span>`:''}<div style="width:44px;height:4px;background:var(--border);border-radius:2px"><div style="height:100%;width:${pct}%;background:${col};border-radius:2px"></div></div></div>`;
+  }
+  document.getElementById('courtList').innerHTML=html||'<div style="color:var(--muted);font-size:12px">No data</div>';
+}
+
+function addFeed(type,html){feed.unshift({type,html,t:new Date()});if(feed.length>15)feed.pop();renderFeed();}
+function renderFeed(){
+  const el=document.getElementById('actFeed');
+  if(!feed.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">No activity yet</div>';return;}
+  el.innerHTML=feed.map(f=>`<div class="feed-item"><div class="fd fd-${f.type}"></div><div class="feed-txt">${f.html}</div><div class="feed-t">${relTime(f.t.toISOString())}</div></div>`).join('');
+}
+
+function showCodeModal(p){
+  document.getElementById('modal-code').textContent=p.code;
+  document.getElementById('modal-name').textContent=p.name+' · '+passLabel(p.pass_type);
+  document.getElementById('codeModal').classList.add('open');
+}
+function closeModal(){document.getElementById('codeModal').classList.remove('open');}
+
+function initials(n){return n.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function passLabel(p){return {day:'Day Pass',week:'Week Pass',month:'Monthly Member'}[p]||p;}
+function relTime(iso){const ms=Date.now()-new Date(iso).getTime();if(ms<60000)return 'just now';if(ms<3600000)return Math.floor(ms/60000)+'m ago';return Math.floor(ms/3600000)+'h ago';}
+function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});}
+let tt;function toast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3000);}
+
+init();
+</script>
+</body>
+</html>

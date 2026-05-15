@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>RSVP Courts — Court Check-In</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--green:#1a7a4a;--gl:#e6f5eb;--gm:#2d9e52;--bg:#f8faf8;--surface:#fff;--dark:#0d1a0f;--muted:#7a8c7a;--border:#e0e8e0;--b2:#c8d8c8;--red:#c0392b;--rl:#fdf0ef;--amber:#b37a00;--al:#fef9e7;--blue:#1a5fa8;--bl:#eaf1fb}
+html,body{background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;overflow-x:hidden;overflow-y:auto}
+.stripe{height:5px;background:linear-gradient(90deg,var(--green),var(--gm));position:fixed;top:0;left:0;right:0;z-index:100}
+.app{min-height:100vh;display:flex;flex-direction:column;padding-top:5px}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;position:sticky;top:5px;z-index:50}
+.header-left{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.logo{font-size:15px;font-weight:800;color:var(--green);white-space:nowrap;font-family:'Syne',sans-serif}
+.divider{width:1px;height:18px;background:var(--b2);flex-shrink:0}
+.court-sel{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.csel-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+.pills{display:flex;gap:4px;flex-wrap:wrap}
+.pill{padding:5px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--b2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;min-width:36px;text-align:center;transition:all .15s}
+.pill.on{background:var(--green);border-color:var(--green);color:#fff}
+.pill:hover:not(.on){border-color:var(--green);color:var(--green)}
+.header-right{display:flex;align-items:center;gap:8px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.4s infinite;flex-shrink:0}
+.live-dot.err{background:var(--red);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.htime{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)}
+
+/* BODY */
+.body{flex:1;display:grid;grid-template-columns:1fr 300px}
+@media(max-width:720px){.body{grid-template-columns:1fr}}
+
+/* VALIDATOR */
+.vpane{padding:22px 18px;display:flex;flex-direction:column;gap:18px}
+@media(max-width:480px){.vpane{padding:14px 12px;gap:14px}}
+.vtitle{font-family:'Syne',sans-serif;font-size:clamp(20px,5vw,26px);font-weight:900;letter-spacing:-.02em;line-height:1.1}
+.vsub{font-size:14px;color:var(--muted);margin-top:4px}
+
+/* INPUT */
+.inp-wrap{position:relative}
+.code-inp{width:100%;font-family:'DM Mono',monospace;font-size:clamp(22px,5vw,36px);font-weight:500;padding:15px 18px;padding-right:66px;border:2px solid var(--b2);border-radius:16px;background:var(--surface);color:var(--dark);outline:none;text-transform:uppercase;letter-spacing:.08em;transition:border-color .2s,box-shadow .2s}
+.code-inp::placeholder{color:var(--b2);font-size:clamp(16px,4vw,24px)}
+.code-inp:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(26,122,58,.1)}
+.code-inp.ok{border-color:var(--green);box-shadow:0 0 0 4px rgba(26,122,58,.1)}
+.code-inp.bad{border-color:var(--red);box-shadow:0 0 0 4px rgba(192,57,43,.1)}
+.code-inp.warn{border-color:var(--amber);box-shadow:0 0 0 4px rgba(179,122,0,.1)}
+.go-btn{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:12px;background:var(--green);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.go-btn:hover{background:var(--gm)}
+.go-btn:active{transform:translateY(-50%) scale(.96)}
+.go-btn svg{width:20px;height:20px;stroke:#fff;stroke-width:2.5;fill:none}
+
+/* RESULTS */
+.result{border-radius:14px;padding:14px 16px;display:none;animation:rpop .25s cubic-bezier(.34,1.2,.64,1)}
+.result.on{display:block}
+@keyframes rpop{from{opacity:0;transform:scale(.94) translateY(6px)}to{opacity:1;transform:none}}
+.r-ok{background:var(--gl);border:1.5px solid rgba(26,122,58,.25)}
+.r-err{background:var(--rl);border:1.5px solid rgba(192,57,43,.2)}
+.r-warn{background:var(--al);border:1.5px solid rgba(179,122,0,.2)}
+.r-info{background:var(--bl);border:1.5px solid rgba(26,95,168,.2)}
+.r-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.r-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ri-ok{background:var(--green);color:#fff}.ri-err{background:var(--red);color:#fff}.ri-warn{background:var(--amber);color:#fff}.ri-info{background:var(--blue);color:#fff}
+.r-icon svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.5;fill:none}
+.r-name{font-size:clamp(14px,3vw,17px);font-weight:800;letter-spacing:-.02em}
+.r-ok .r-name{color:var(--green)}.r-err .r-name{color:var(--red)}.r-warn .r-name{color:var(--amber)}.r-info .r-name{color:var(--blue)}
+.r-detail{font-size:13px;margin-top:2px}
+.r-ok .r-detail{color:var(--gm)}.r-err .r-detail{color:var(--red)}.r-warn .r-detail{color:var(--amber)}.r-info .r-detail{color:var(--blue)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px}
+.ch-ok{background:rgba(26,122,58,.15);color:var(--green)}
+.ch-muted{background:rgba(0,0,0,.06);color:var(--muted)}
+.ch-warn{background:rgba(179,122,0,.15);color:var(--amber)}
+.btn-lock{width:100%;padding:clamp(11px,3vw,14px);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:clamp(13px,3vw,15px);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;color:#fff}
+.btn-lock:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-lock:active{transform:translateY(0)}
+.bl-green{background:var(--green)}.bl-amber{background:var(--amber)}.bl-blue{background:var(--blue)}
+
+/* MULTI PLAYER */
+.multi-wrap{display:none;flex-direction:column;gap:8px}
+.multi-wrap.on{display:flex}
+.multi-toggle{width:100%;padding:10px;background:transparent;border:1.5px dashed var(--b2);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.multi-toggle:hover,.multi-toggle.on{border-color:var(--green);color:var(--green);background:var(--gl);border-style:solid}
+.friend-slots{display:none;flex-direction:column;gap:8px}
+.friend-slots.on{display:flex}
+.fslot{background:var(--bg);border:1.5px solid var(--b2);border-radius:12px;padding:11px 13px}
+.fslot-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.fslot-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fstatus{font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+.fs-pending{background:var(--bg);color:var(--muted);border:1px solid var(--b2)}
+.fs-ok{background:var(--gl);color:var(--green)}
+.fs-err{background:var(--rl);color:var(--red)}
+.finp-row{display:flex;gap:6px}
+.finp{flex:1;font-family:'DM Mono',monospace;font-size:16px;font-weight:600;padding:8px 11px;border:1.5px solid var(--b2);border-radius:8px;background:#fff;color:var(--dark);outline:none;text-transform:uppercase;transition:border-color .2s}
+.finp:focus{border-color:var(--green)}
+.finp.ok{border-color:var(--green);background:var(--gl)}
+.finp.bad{border-color:var(--red);background:var(--rl)}
+.fcheck-btn{padding:8px 13px;background:var(--green);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.fname{font-size:13px;font-weight:600;color:var(--green);margin-top:5px;display:none}
+.fname.on{display:block}
+.ferr{font-size:12px;color:var(--red);margin-top:5px;display:none}
+.ferr.on{display:block}
+.btn-lock-all{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+.btn-lock-all.on{display:flex}
+.btn-lock-all:hover{background:var(--gm);transform:translateY(-1px)}
+
+/* INSTRUCTIONS */
+.howto{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 15px}
+.ht-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:9px}
+.ht-steps{display:flex;flex-direction:column;gap:8px}
+.ht-step{display:flex;gap:9px;align-items:flex-start}
+.ht-num{width:20px;height:20px;border-radius:50%;background:var(--gl);color:var(--green);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.ht-txt{font-size:13px;color:var(--muted);line-height:1.5}
+.ht-txt strong{color:var(--dark)}
+
+/* QUEUE PANEL */
+.qpane{border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column}
+@media(max-width:720px){.qpane{border-left:none;border-top:1px solid var(--border)}}
+.qhead{padding:14px 18px 11px;border-bottom:1px solid var(--border)}
+.qt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.qcourt{font-size:clamp(15px,3vw,19px);font-weight:900;letter-spacing:-.02em;color:var(--dark);margin-top:2px;font-family:'Syne',sans-serif}
+.exp-banner{background:var(--rl);border:1.5px solid rgba(192,57,43,.3);border-radius:10px;padding:10px 13px;display:none;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px}
+.exp-banner.on{display:flex}
+.eb-txt{flex:1;font-size:13px;color:var(--red);font-weight:600;min-width:100px}
+.eb-btn{padding:8px 12px;background:var(--red);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pslots-wrap{padding:12px 18px;border-bottom:1px solid var(--border)}
+.pslots-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
+.pslots{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+@media(max-width:360px){.pslots{grid-template-columns:1fr}}
+.pslot{border-radius:10px;padding:8px 10px;border:1.5px dashed var(--b2);display:flex;align-items:center;gap:7px;min-height:46px;cursor:default}
+.pslot.filled{background:var(--gl);border:1.5px solid rgba(26,122,58,.25);cursor:pointer;-webkit-tap-highlight-color:rgba(26,122,58,.1)}
+.pslot.filled:active{transform:scale(.97)}
+.pslot-av{width:24px;height:24px;border-radius:6px;background:rgba(26,122,58,.15);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--green);flex-shrink:0;font-family:'DM Mono',monospace}
+.pslot-name{font-size:12px;font-weight:600;color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pslot-manage{font-size:10px;color:var(--muted);opacity:.7}
+.pslot-empty{font-size:12px;color:var(--b2);font-weight:500}
+.qlist-wrap{flex:1;overflow-y:auto;padding:12px 18px;min-height:60px}
+.qlabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
+.qitem{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.qitem:last-child{border-bottom:none}
+.qpos{width:20px;height:20px;border-radius:50%;background:var(--al);color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qname{flex:1;font-weight:600}
+.qwait{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap}
+.qempty{font-size:13px;color:var(--muted);text-align:center;padding:14px 0}
+.sbar{padding:10px 18px;border-top:1px solid var(--border)}
+.sbar-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px}
+.sbar-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.sbar-fill{height:100%;background:var(--green);border-radius:3px;transition:width 1s}
+.sbar-fill.mid{background:var(--amber)}.sbar-fill.low{background:var(--red)}
+.sbar-times{display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:4px}
+
+/* PLAYER MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:flex-end;justify-content:center;padding-bottom:env(safe-area-inset-bottom,12px)}
+.modal-bg.on{display:flex;animation:mfade .18s ease}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));width:100%;max-width:460px;animation:mslide .25s cubic-bezier(.34,1.1,.64,1);max-height:85vh;overflow-y:auto}
+@keyframes mslide{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.modal-handle{width:38px;height:4px;border-radius:2px;background:var(--b2);margin:0 auto 16px}
+.modal-player{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.modal-av{width:44px;height:44px;border-radius:12px;background:var(--gl);color:var(--green);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace}
+.modal-pname{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.modal-psub{font-size:12px;color:var(--muted);margin-top:2px}
+.modal-btns{display:flex;flex-direction:column;gap:9px}
+.mbtn{width:100%;padding:14px 15px;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;display:flex;align-items:center;gap:10px;-webkit-tap-highlight-color:transparent}
+.mbtn:active{transform:scale(.97)}
+.mbtn svg{width:19px;height:19px;stroke:currentColor;stroke-width:2.5;fill:none;flex-shrink:0}
+.mb-leave{background:var(--rl);color:var(--red)}
+.mb-switch{background:var(--bl);color:var(--blue)}
+.mb-cancel{background:var(--bg);color:var(--muted);border:1.5px solid var(--b2)}
+.switch-pills{display:none;flex-wrap:wrap;gap:7px;padding:4px 0}
+.switch-pills.on{display:flex}
+.sw-pill{padding:9px 16px;border-radius:22px;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--b2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;min-width:76px;text-align:center;-webkit-tap-highlight-color:transparent}
+.sw-pill:hover:not(.full){border-color:var(--blue);color:var(--blue);background:var(--bl)}
+.sw-pill.full{opacity:.35;cursor:not-allowed}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--dark);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;transition:transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;white-space:nowrap;max-width:92vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green)}.toast.err{background:var(--red)}.toast.warn{background:var(--amber)}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">RSVP Courts</div>
+      <div class="divider"></div>
+      <div class="court-sel">
+        <div class="csel-lbl">Court</div>
+        <div class="pills" id="pills"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-dot" id="liveDot"></div>
+      <div class="htime" id="clock">--:--</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="vpane">
+      <div>
+        <div class="vtitle" id="vtitle">Court 1<br>Check-In</div>
+        <div class="vsub">Enter your code to join</div>
+      </div>
+      <div class="inp-wrap">
+        <input class="code-inp" id="codeInp" type="text" maxlength="10" placeholder="TIGER07"
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          oninput="onCodeType()" onkeydown="if(event.key==='Enter')validate()">
+        <button class="go-btn" onclick="validate()"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+
+      <div class="result r-ok" id="res-ok">
+        <div class="r-row"><div class="r-icon ri-ok"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="r-name" id="ok-name"></div><div class="r-detail" id="ok-sub"></div></div></div>
+        <div class="chips" id="ok-chips"></div>
+        <button class="btn-lock bl-green" id="lockBtn" onclick="lockToCourt()">🔒 Lock to this court &amp; proceed</button>
+      </div>
+      <div class="result r-info" id="res-same">
+        <div class="r-row"><div class="r-icon ri-info"><svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0zM12 8v4m0 4h.01"/></svg></div><div><div class="r-name" id="same-name"></div><div class="r-detail" id="same-sub"></div></div></div>
+        <button class="btn-lock bl-blue" onclick="reconfirm()">✓ Re-confirm entry</button>
+      </div>
+      <div class="result r-warn" id="res-warn">
+        <div class="r-row"><div class="r-icon ri-warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="r-name" id="warn-name"></div><div class="r-detail" id="warn-sub"></div></div></div>
+      </div>
+      <div class="result r-err" id="res-err">
+        <div class="r-row"><div class="r-icon ri-err"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div><div class="r-name" id="err-name"></div><div class="r-detail" id="err-sub"></div></div></div>
+      </div>
+
+      <!-- Multi-player -->
+      <div class="multi-wrap" id="multiWrap">
+        <button class="multi-toggle" id="multiToggle" onclick="toggleMulti()">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2.5;fill:none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Adding friends? Enter their codes too
+        </button>
+        <div class="friend-slots" id="friendSlots"></div>
+        <button class="btn-lock-all" id="lockAllBtn" onclick="lockAll()">🔒 Lock all players &amp; proceed</button>
+      </div>
+
+      <div class="howto">
+        <div class="ht-title">How to check in</div>
+        <div class="ht-steps">
+          <div class="ht-step"><div class="ht-num">1</div><div class="ht-txt">Pay at the front desk and get your <strong>check-in code</strong></div></div>
+          <div class="ht-step"><div class="ht-num">2</div><div class="ht-txt">Type your code above — e.g. <strong>TIGER07</strong></div></div>
+          <div class="ht-step"><div class="ht-num">3</div><div class="ht-txt">Tap <strong>Lock to this court</strong>. One code per court.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qpane">
+      <div class="qhead">
+        <div class="qt">Now playing</div>
+        <div class="qcourt" id="qcourtLabel">Court 1</div>
+        <div class="exp-banner" id="expBanner">
+          <span>⏰</span>
+          <div class="eb-txt">Session time is up! Players must leave.</div>
+          <button class="eb-btn" onclick="endSession()">End Session</button>
+        </div>
+      </div>
+      <div class="pslots-wrap">
+        <div class="pslots-lbl">Players on court</div>
+        <div class="pslots" id="pslots"></div>
+      </div>
+      <div class="qlist-wrap">
+        <div class="qlabel">Queue</div>
+        <div id="qlist"><div class="qempty">No one in queue</div></div>
+      </div>
+      <div class="sbar">
+        <div class="sbar-lbl">Session <span id="sbar-lbl"></span></div>
+        <div class="sbar-track"><div class="sbar-fill" id="sbarFill" style="width:0%"></div></div>
+        <div class="sbar-times"><span id="sbar-start">--</span><span id="sbar-end">--</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Player action modal -->
+<div class="modal-bg" id="playerModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-player">
+      <div class="modal-av" id="modal-av">JL</div>
+      <div><div class="modal-pname" id="modal-pname"></div><div class="modal-psub" id="modal-psub"></div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn mb-leave" onclick="playerLeave()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Leave Court <span id="modal-court-num">1</span></button>
+      <button class="mbtn mb-switch" onclick="toggleSwitchPills()"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Switch to another court</button>
+      <div class="switch-pills" id="switchPills"></div>
+      <button class="mbtn mb-cancel" onclick="closeModal()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
+const GYM_SLUG = new URLSearchParams(window.location.search).get('gym');
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+let GYM = null;
+let court = 1;
+let sessionStart = null;
+let validPlayer = null;
+let friendData = [null,null,null];
+let modalRowId = null;
+let modalPlayerId = null;
+let slotPlayers = [];
+
+async function init() {
+  updateClock(); setInterval(updateClock,1000);
+  if (!GYM_SLUG) { setLive(false); document.getElementById('vtitle').innerHTML='No gym<br>in URL'; return; }
+  const {data,error} = await sb.from('gyms').select('*').eq('slug',GYM_SLUG).maybeSingle();
+  if(error||!data){setLive(false);document.getElementById('vtitle').innerHTML='Gym not<br>found';return;}
+  GYM=data;
+  document.title=GYM.name+' — Court Check-In';
+  buildPills(GYM.num_courts);
+  setLive(true);
+  await loadCourtData();
+  subscribeRealtime();
+}
+
+function buildPills(n){
+  const w=document.getElementById('pills'); w.innerHTML='';
+  for(let i=1;i<=n;i++){
+    const b=document.createElement('button');
+    b.className='pill'+(i===1?' on':'');
+    b.textContent=i;
+    b.onclick=()=>selectCourt(i);
+    w.appendChild(b);
+  }
+}
+
+function selectCourt(n){
+  court=n;
+  document.querySelectorAll('.pill').forEach((p,i)=>p.classList.toggle('on',i+1===n));
+  document.getElementById('vtitle').innerHTML='Court '+n+'<br>Check-In';
+  document.getElementById('qcourtLabel').textContent='Court '+n;
+  clearResult(); clearMulti();
+  document.getElementById('codeInp').value='';
+  loadCourtData();
+}
+
+async function loadCourtData(){
+  if(!GYM)return;
+  const [r1,r2,r3]=await Promise.all([
+    sb.from('court_players').select('*, players(name,code)').eq('gym_id',GYM.id).eq('court_number',court),
+    sb.from('queue').select('*, players(name)').eq('gym_id',GYM.id).eq('court_number',court).order('position'),
+    sb.from('courts').select('*').eq('gym_id',GYM.id).eq('court_number',court).maybeSingle()
+  ]);
+  renderSlots(r1.data||[],GYM.players_per_court);
+  renderQueue(r2.data||[],GYM.session_mins);
+  renderSessionBar(r3.data);
+}
+
+function renderSlots(players,maxP){
+  slotPlayers=players;
+  const w=document.getElementById('pslots'); let h='';
+  for(let i=0;i<maxP;i++){
+    const p=players[i];
+    if(p&&p.players){
+      h+=`<div class="pslot filled" onclick="openModal(${i})"><div class="pslot-av">${ini(p.players.name)}</div><div><div class="pslot-name">${p.players.name.split(' ')[0]}</div><div class="pslot-manage">tap to manage</div></div></div>`;
+    } else {
+      h+='<div class="pslot"><div class="pslot-empty">Open</div></div>';
+    }
+  }
+  w.innerHTML=h;
+}
+
+function renderQueue(queue,mins){
+  const el=document.getElementById('qlist');
+  if(!queue.length){el.innerHTML='<div class="qempty">No one in queue</div>';return;}
+  el.innerHTML=queue.map((q,i)=>`<div class="qitem"><div class="qpos">${i+1}</div><div class="qname">${q.players?q.players.name:'—'}</div><div class="qwait">~${Math.round(mins*.6*(i+1))}m</div></div>`).join('');
+}
+
+function renderSessionBar(courtData){
+  if(!courtData||!courtData.session_start){
+    document.getElementById('sbarFill').style.width='0%';
+    document.getElementById('sbar-lbl').textContent='— no active session';
+    document.getElementById('sbar-start').textContent='--';
+    document.getElementById('sbar-end').textContent='--';
+    document.getElementById('expBanner').classList.remove('on');
+    return;
+  }
+  sessionStart=new Date(courtData.session_start);
+  const mins=GYM?GYM.session_mins:30;
+  const end=new Date(sessionStart.getTime()+mins*60000);
+  const elapsed=(Date.now()-sessionStart)/60000;
+  const pct=Math.min(100,Math.round(elapsed/mins*100));
+  const rem=Math.max(0,Math.round(mins-elapsed));
+  const fill=document.getElementById('sbarFill');
+  fill.style.width=pct+'%';
+  fill.className='sbar-fill'+(pct>80?' low':pct>55?' mid':'');
+  document.getElementById('sbar-lbl').textContent='· '+rem+'m remaining';
+  document.getElementById('sbar-start').textContent=ft(sessionStart);
+  document.getElementById('sbar-end').textContent=ft(end);
+  document.getElementById('expBanner').classList.toggle('on',elapsed>=mins);
+}
+
+function subscribeRealtime(){
+  sb.channel('validator-'+GYM.id+'-'+court)
+    .on('postgres_changes',{event:'*',schema:'public',table:'court_players'},()=>loadCourtData())
+    .on('postgres_changes',{event:'*',schema:'public',table:'queue'},()=>loadCourtData())
+    .on('postgres_changes',{event:'*',schema:'public',table:'courts'},()=>loadCourtData())
+    .subscribe();
+}
+
+// ── VALIDATE ──────────────────────────────────────────────────
+async function validate(){
+  const raw=document.getElementById('codeInp').value.trim().toUpperCase().replace(/\s/g,'');
+  const inp=document.getElementById('codeInp');
+  clearResult(); clearMulti();
+  if(!raw||!GYM)return;
+  toast('Checking…');
+  try{
+    const {data:p,error}=await sb.from('players').select('*').eq('code',raw).eq('gym_id',GYM.id).maybeSingle();
+    if(error){inp.className='code-inp bad';setErr('Database error',error.message);toast('DB error','err');return;}
+    if(!p){inp.className='code-inp bad';setErr('Code not found','"'+raw+'" has not been issued. Visit the front desk.');toast('Not found','err');return;}
+    if(p.status==='pending'){inp.className='code-inp bad';setErr('Payment not confirmed','Staff have not approved this code yet.');toast('Pending approval','warn');return;}
+    if(p.status==='revoked'){inp.className='code-inp bad';setErr('Code revoked',p.name+'\u2019s code has been revoked.');toast('Revoked','err');return;}
+    if(new Date(p.expires_at)<new Date()){inp.className='code-inp bad';setErr('Code expired',(p.pass_type==='day'?'Day pass expired at midnight':('Pass expired'))+'. '+p.name+' needs a new pass.');toast('Expired','err');return;}
+    const lc=p.locked_court!=null?parseInt(p.locked_court,10):null;
+    if(lc&&lc!==court){inp.className='code-inp warn';show('res-warn');document.getElementById('warn-name').textContent=p.name+' is on Court '+lc;document.getElementById('warn-sub').textContent='Code is locked to Court '+lc+'. One court per pass.';toast('Locked to Court '+lc,'warn');return;}
+    if(lc===court){inp.className='code-inp ok';show('res-same');document.getElementById('same-name').textContent=p.name+' — already on this court';document.getElementById('same-sub').textContent=pl(p.pass_type)+' · '+cdwn(p.expires_at);validPlayer=p;toast('Welcome back, '+p.name.split(' ')[0]+'!','ok');return;}
+    // valid — check capacity
+    const {data:onC}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('court_number',court);
+    const full=(onC||[]).length>=GYM.players_per_court;
+    inp.className='code-inp ok';
+    show('res-ok');
+    document.getElementById('ok-name').textContent=p.name;
+    document.getElementById('ok-sub').textContent=pl(p.pass_type)+' · '+cdwn(p.expires_at);
+    let chips=`<div class="chip ch-ok">✓ Valid code</div><div class="chip ch-muted">${p.pass_type==='day'?'Expires midnight':'Active pass'}</div>`;
+    if(full)chips+=`<div class="chip ch-warn">Court full — will queue</div>`;
+    document.getElementById('ok-chips').innerHTML=chips;
+    const btn=document.getElementById('lockBtn');
+    btn.textContent=full?'⏳ Join queue for Court '+court:'🔒 Lock to this court & proceed';
+    btn.className='btn-lock '+(full?'bl-amber':'bl-green');
+    validPlayer=p;
+    if(!full&&GYM.players_per_court>1)showMultiSection();
+    toast(p.name+(full?' — court full, will queue':' — valid!'),full?'warn':'ok');
+  }catch(e){setErr('Error',e.message||'Something went wrong');toast('Error','err');}
+}
+
+async function lockToCourt(){
+  if(!validPlayer)return;
+  const p=validPlayer;
+  const {data:onC}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('court_number',court);
+  const full=(onC||[]).length>=GYM.players_per_court;
+  await sb.from('players').update({locked_court:court}).eq('id',p.id);
+  if(full){
+    const {data:alreadyQ}=await sb.from('queue').select('id').eq('gym_id',GYM.id).eq('player_id',p.id).maybeSingle();
+    if(!alreadyQ){
+      const {data:qRows}=await sb.from('queue').select('position').eq('gym_id',GYM.id).eq('court_number',court).order('position',{ascending:false}).limit(1);
+      const pos=(qRows&&qRows.length)?qRows[0].position+1:1;
+      await sb.from('queue').insert({gym_id:GYM.id,court_number:court,player_id:p.id,position:pos,queued_at:new Date().toISOString()});
+    }
+    reset(); await loadCourtData(); toast(p.name+' added to queue ✓','ok');
+  }else{
+    const {data:ex}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('player_id',p.id).maybeSingle();
+    if(!ex)await sb.from('court_players').insert({gym_id:GYM.id,court_number:court,player_id:p.id});
+    await startSession();
+    reset(); await loadCourtData(); toast(p.name+' joined Court '+court+' ✓','ok');
+  }
+}
+
+async function startSession(){
+  const {data:cr}=await sb.from('courts').select('*').eq('gym_id',GYM.id).eq('court_number',court).maybeSingle();
+  if(!cr)await sb.from('courts').insert({gym_id:GYM.id,court_number:court,session_start:new Date().toISOString()});
+  else if(!cr.session_start)await sb.from('courts').update({session_start:new Date().toISOString()}).eq('id',cr.id);
+}
+
+async function reconfirm(){
+  toast('Welcome back, '+(validPlayer?validPlayer.name.split(' ')[0]:'')+'!','ok');
+  reset();
+}
+
+// ── MULTI PLAYER ──────────────────────────────────────────────
+function showMultiSection(){document.getElementById('multiWrap').classList.add('on');buildFriendSlots();}
+function hideMultiSection(){document.getElementById('multiWrap').classList.remove('on');document.getElementById('friendSlots').innerHTML='';document.getElementById('friendSlots').classList.remove('on');document.getElementById('multiToggle').classList.remove('on');document.getElementById('lockAllBtn').className='btn-lock-all';}
+function clearMulti(){friendData=[null,null,null];hideMultiSection();}
+
+function toggleMulti(){
+  const s=document.getElementById('friendSlots'),t=document.getElementById('multiToggle');
+  const open=s.classList.contains('on');
+  s.classList.toggle('on',!open);t.classList.toggle('on',!open);
+  if(!open)buildFriendSlots();
+  updateLockAll();
+}
+
+function buildFriendSlots(){
+  const w=document.getElementById('friendSlots');
+  if(w.innerHTML)return;
+  const max=Math.min(3,(GYM?GYM.players_per_court:4)-1);
+  let h='';
+  for(let i=0;i<max;i++){
+    h+=`<div class="fslot"><div class="fslot-hd"><div class="fslot-lbl">Friend ${i+1}</div><div class="fstatus fs-pending" id="fst-${i}">Not added</div></div><div class="finp-row"><input class="finp" id="fi-${i}" type="text" maxlength="10" placeholder="e.g. EAGLE23" autocomplete="off" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')checkFriend(${i})"><button class="fcheck-btn" onclick="checkFriend(${i})">Check</button></div><div class="fname" id="fn-${i}"></div><div class="ferr" id="fe-${i}"></div></div>`;
+  }
+  w.innerHTML=h;
+}
+
+async function checkFriend(i){
+  const raw=document.getElementById('fi-'+i).value.trim().toUpperCase().replace(/\s/g,'');
+  const inp=document.getElementById('fi-'+i),st=document.getElementById('fst-'+i),nm=document.getElementById('fn-'+i),er=document.getElementById('fe-'+i);
+  nm.classList.remove('on');er.classList.remove('on');
+  if(!raw)return;
+  if(validPlayer&&raw===validPlayer.code)return fail(i,inp,st,er,'This is the primary player\'s code.');
+  for(let j=0;j<3;j++){if(j!==i&&friendData[j]&&friendData[j].code===raw)return fail(i,inp,st,er,'This code is already added.');}
+  const {data:p}=await sb.from('players').select('*').eq('code',raw).eq('gym_id',GYM.id).maybeSingle();
+  if(!p)return fail(i,inp,st,er,'Code not found.');
+  if(p.status==='pending')return fail(i,inp,st,er,'Payment not confirmed yet.');
+  if(p.status==='revoked')return fail(i,inp,st,er,'Code has been revoked.');
+  if(new Date(p.expires_at)<new Date())return fail(i,inp,st,er,'Code has expired.');
+  const lc=p.locked_court!=null?parseInt(p.locked_court,10):null;
+  if(lc&&lc!==court)return fail(i,inp,st,er,'Code locked to Court '+lc+'.');
+  inp.className='finp ok';st.className='fstatus fs-ok';st.textContent='Ready';
+  nm.textContent='✓ '+p.name+' — '+pl(p.pass_type);nm.classList.add('on');
+  friendData[i]=p;updateLockAll();
+}
+
+function fail(i,inp,st,er,msg){inp.className='finp bad';st.className='fstatus fs-err';st.textContent='Invalid';er.textContent=msg;er.classList.add('on');friendData[i]=null;updateLockAll();}
+
+function updateLockAll(){
+  const valid=friendData.filter(f=>f).length;
+  const open=document.getElementById('friendSlots').classList.contains('on');
+  const btn=document.getElementById('lockAllBtn');
+  if(open&&valid>0&&validPlayer){
+    btn.className='btn-lock-all on';
+    btn.textContent='🔒 Lock all '+(1+valid)+' players & proceed';
+  }else{btn.className='btn-lock-all';}
+}
+
+async function lockAll(){
+  if(!validPlayer)return;
+  const all=[validPlayer,...friendData.filter(f=>f)];
+  const {data:onC}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('court_number',court);
+  const available=GYM.players_per_court-(onC||[]).length;
+  if(all.length>available){toast('Only '+available+' spot(s) left','warn');return;}
+  for(const p of all){
+    await sb.from('players').update({locked_court:court}).eq('id',p.id);
+    const {data:ex}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('player_id',p.id).maybeSingle();
+    if(!ex)await sb.from('court_players').insert({gym_id:GYM.id,court_number:court,player_id:p.id});
+  }
+  await startSession();
+  reset(); clearMulti(); await loadCourtData();
+  toast(all.length+' players locked to Court '+court+' ✓','ok');
+}
+
+// ── SESSION END ───────────────────────────────────────────────
+async function endSession(){
+  if(!confirm('End session and remove all players from Court '+court+'?'))return;
+  const {data:cp}=await sb.from('court_players').select('*').eq('gym_id',GYM.id).eq('court_number',court);
+  await sb.from('court_players').delete().eq('gym_id',GYM.id).eq('court_number',court);
+  await sb.from('courts').update({session_start:null}).eq('gym_id',GYM.id).eq('court_number',court);
+  for(const r of(cp||[]))await sb.from('players').update({locked_court:null}).eq('id',r.player_id);
+  sessionStart=null;
+  document.getElementById('expBanner').classList.remove('on');
+  await promoteQueue((cp||[]).length);
+  await loadCourtData();
+  toast('Session ended — court is open','ok');
+}
+
+async function promoteQueue(spots){
+  if(!spots)return;
+  const {data:q}=await sb.from('queue').select('*, players(name)').eq('gym_id',GYM.id).eq('court_number',court).order('position').limit(spots);
+  for(let i=0;i<(q||[]).length;i++){
+    const qi=q[i];
+    await sb.from('court_players').insert({gym_id:GYM.id,court_number:court,player_id:qi.player_id});
+    await sb.from('queue').delete().eq('id',qi.id);
+    if(i===0)await sb.from('courts').update({session_start:new Date().toISOString()}).eq('gym_id',GYM.id).eq('court_number',court);
+    if(qi.players)toast(qi.players.name+' promoted from queue!','ok');
+  }
+}
+
+// ── PLAYER MODAL ──────────────────────────────────────────────
+function openModal(idx){
+  const p=slotPlayers[idx];
+  if(!p||!p.players)return;
+  modalRowId=p.id;modalPlayerId=p.player_id;
+  document.getElementById('modal-av').textContent=ini(p.players.name);
+  document.getElementById('modal-pname').textContent=p.players.name;
+  document.getElementById('modal-psub').textContent=p.players.code+' · Court '+court;
+  document.getElementById('modal-court-num').textContent=court;
+  const sw=document.getElementById('switchPills');sw.innerHTML='';sw.classList.remove('on');
+  for(let i=1;i<=GYM.num_courts;i++){
+    if(i===court)continue;
+    const b=document.createElement('button');b.className='sw-pill';b.textContent='Court '+i;
+    b.onclick=(n=>()=>switchCourt(n))(i);
+    sw.appendChild(b);
+  }
+  document.getElementById('playerModal').classList.add('on');
+}
+function closeModal(){document.getElementById('playerModal').classList.remove('on');document.getElementById('switchPills').classList.remove('on');}
+function toggleSwitchPills(){document.getElementById('switchPills').classList.toggle('on');}
+
+async function playerLeave(){
+  if(!modalRowId)return;
+  closeModal();
+  await sb.from('court_players').delete().eq('id',modalRowId);
+  await sb.from('players').update({locked_court:null}).eq('id',modalPlayerId);
+  const {data:cp}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('court_number',court);
+  const spots=GYM.players_per_court-(cp||[]).length;
+  if(spots>0)await promoteQueue(spots);
+  await loadCourtData();
+  toast('Player left Court '+court,'ok');
+}
+
+async function switchCourt(target){
+  if(!modalRowId)return;
+  const {data:onT}=await sb.from('court_players').select('id').eq('gym_id',GYM.id).eq('court_number',target);
+  if((onT||[]).length>=GYM.players_per_court){toast('Court '+target+' is full','err');return;}
+  closeModal();
+  await sb.from('court_players').delete().eq('id',modalRowId);
+  await sb.from('court_players').insert({gym_id:GYM.id,court_number:target,player_id:modalPlayerId});
+  await sb.from('players').update({locked_court:target}).eq('id',modalPlayerId);
+  const {data:cr}=await sb.from('courts').select('*').eq('gym_id',GYM.id).eq('court_number',target).maybeSingle();
+  if(!cr)await sb.from('courts').insert({gym_id:GYM.id,court_number:target,session_start:new Date().toISOString()});
+  else if(!cr.session_start)await sb.from('courts').update({session_start:new Date().toISOString()}).eq('id',cr.id);
+  await promoteQueue(1);
+  await loadCourtData();
+  toast('Switched to Court '+target+' ✓','ok');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function clearResult(){['res-ok','res-err','res-warn','res-same'].forEach(id=>document.getElementById(id).classList.remove('on'));validPlayer=null;}
+function show(id){document.getElementById(id).classList.add('on');}
+function setErr(t,s){show('res-err');document.getElementById('err-name').textContent=t;document.getElementById('err-sub').textContent=s;}
+function setLive(ok){document.getElementById('liveDot').className='live-dot'+(ok?'':' err');}
+function reset(){clearResult();clearMulti();document.getElementById('codeInp').value='';document.getElementById('codeInp').className='code-inp';validPlayer=null;}
+function onCodeType(){document.getElementById('codeInp').value=document.getElementById('codeInp').value.toUpperCase();clearResult();clearMulti();document.getElementById('codeInp').className='code-inp';}
+function pl(p){return{day:'Day Pass',week:'Week Pass',month:'Monthly Member'}[p]||p;}
+function ini(n){return n.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function ft(d){return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});}
+function cdwn(iso){const ms=new Date(iso)-new Date();if(ms<=0)return'Expired';const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);if(h===0)return m+'m remaining';if(h<24)return h+'h '+m+'m remaining';return Math.ceil(h/24)+' days remaining';}
+function updateClock(){document.getElementById('clock').textContent=ft(new Date());if(sessionStart&&GYM)renderSessionBar({session_start:sessionStart.toISOString()});}
+let tt;function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3000);}
+
+init();
+</script>
+</body>
+</html>

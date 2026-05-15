@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RSVP Courts — Owner Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1a7a4a;--gl:#e6f5eb;--gm:#2d9e52;
+  --bg:#f4f6f3;--surface:#fff;--dark:#0d1a0f;
+  --muted:#6b7a6b;--border:#e0e8e0;--b2:#c8d8c8;
+  --red:#c0392b;--rl:#fdf0ef;
+  --amber:#b37a00;--al:#fef9e7;
+  --blue:#1a5fa8;--bl:#eaf1fb;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:none;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar.show{display:flex}
+.logo{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--green)}
+.btn-logout{padding:6px 14px;background:transparent;border:1px solid var(--b2);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif}
+.btn-logout:hover{background:var(--rl);color:var(--red);border-color:transparent}
+.user-lbl{font-size:13px;color:var(--muted)}
+
+/* PAGES */
+.pg{display:none}.pg.on{display:block}
+
+/* ── AUTH ── */
+.auth-outer{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:400px}
+.auth-logo{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green);text-align:center;margin-bottom:2px}
+.auth-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:1.5rem}
+.tabs{display:flex;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:1.25rem;gap:4px}
+.tab{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif}
+.tab.on{background:var(--surface);color:var(--dark);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.err-box{font-size:13px;color:var(--red);background:var(--rl);padding:10px 14px;border-radius:8px;margin-bottom:12px;display:none}
+.err-box.on{display:block}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.field input{padding:11px 13px;border:1.5px solid var(--b2);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--dark);outline:none;background:var(--bg);transition:border-color .2s}
+.field input:focus{border-color:var(--green);background:#fff}
+.btn-main{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px}
+.btn-main:hover{background:#145e38}
+
+/* ── ONBOARD ── */
+.ob-outer{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.ob-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;overflow:hidden}
+.ob-head{background:var(--green);padding:1.75rem 2rem;color:#fff}
+.ob-head h2{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;margin-bottom:3px}
+.ob-head p{font-size:13px;opacity:.8}
+.ob-body{padding:1.5rem 2rem}
+.ob-dots{display:flex;gap:5px;margin-bottom:1.25rem}
+.ob-dot{height:4px;flex:1;border-radius:2px;background:var(--border)}
+.ob-dot.done{background:var(--green)}.ob-dot.cur{background:var(--gm)}
+.sec-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:9px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tgroup{display:flex;gap:6px}
+.topt{flex:1;padding:10px 8px;border:1.5px solid var(--b2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;color:var(--muted);background:var(--bg);font-family:'DM Sans',sans-serif}
+.topt.on{background:var(--green);border-color:var(--green);color:#fff}
+.sport-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.sport-btn{padding:10px 6px;border:1.5px solid var(--b2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:var(--muted);background:var(--bg);font-family:'DM Sans',sans-serif}
+.sport-btn.on{background:var(--green);border-color:var(--green);color:#fff}
+.ob-foot{padding:1rem 2rem 1.5rem;display:flex;gap:10px;border-top:1px solid var(--border)}
+.btn-back{padding:11px 16px;background:transparent;color:var(--muted);border:1.5px solid var(--b2);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.btn-next{flex:1;padding:11px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.btn-next:hover{background:#145e38}
+
+/* ── DASHBOARD ── */
+.dash{max-width:940px;margin:0 auto;padding:1.75rem 1.25rem}
+.dash-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.dash-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
+.dash-slug{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px}
+.btn-settings{padding:9px 16px;background:transparent;color:var(--green);border:1.5px solid var(--green);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-settings:hover{background:var(--gl)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+@media(max-width:580px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.stat-v{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--green)}
+.stat-l{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:3px}
+.dash-grid{display:grid;grid-template-columns:1fr 320px;gap:14px}
+@media(max-width:740px){.dash-grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.panel-head{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.panel-body{padding:14px 16px}
+
+/* SETTINGS */
+.s-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+@media(max-width:480px){.s-row{grid-template-columns:1fr}}
+.s-field{display:flex;flex-direction:column;gap:5px}
+.s-field label{font-size:12px;color:var(--muted);font-weight:500}
+.s-field input,.s-field select{padding:9px 11px;border:1.5px solid var(--b2);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dark);outline:none;background:var(--bg)}
+.s-field input:focus,.s-field select:focus{border-color:var(--green);background:#fff}
+.btn-save{padding:10px 20px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-save:hover{background:#145e38}
+
+/* COURT OVERVIEW */
+.c-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.c-row:last-child{border-bottom:none}
+.c-badge{width:28px;height:28px;border-radius:7px;background:var(--gl);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace}
+.c-name{flex:1;font-weight:600}
+.c-chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
+.cc-empty{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.cc-active{background:var(--gl);color:var(--green)}
+.cc-full{background:var(--al);color:var(--amber)}
+
+/* QR & LINKS */
+.qr-wrap{border:2px solid var(--green);border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:10px}
+.url-box{font-family:'DM Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);padding:8px 11px;border-radius:8px;word-break:break-all;color:var(--muted);margin-bottom:8px}
+.btn-copy{width:100%;padding:9px;background:var(--gl);color:var(--green);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-copy:hover{background:var(--green);color:#fff}
+.link-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.link-row:last-child{border-bottom:none}
+.link-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.link-info{flex:1}
+.link-name{font-size:13px;font-weight:600}
+.link-sub{font-size:11px;color:var(--muted)}
+.link-btn{padding:6px 12px;background:var(--bg);border:1px solid var(--b2);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--dark);text-decoration:none;white-space:nowrap}
+.link-btn:hover{background:var(--gl);border-color:var(--green);color:var(--green)}
+
+/* PLAYER TABLE */
+.ptable{width:100%;border-collapse:collapse;font-size:13px}
+.ptable th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:9px 14px;border-bottom:1px solid var(--border);text-align:left;background:var(--bg)}
+.ptable td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ptable tr:last-child td{border-bottom:none}
+.btn-revoke{font-size:11px;padding:4px 8px;border:1px solid var(--b2);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif}
+.btn-revoke:hover{color:var(--red);border-color:var(--red);background:var(--rl)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--dark);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;transition:transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green)}.toast.err{background:var(--red)}
+
+/* QR pixel grid */
+svg.qr{width:120px;height:120px;shape-rendering:crispEdges}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div class="logo">RSVP Courts</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="user-lbl" id="userLbl"></span>
+    <button class="btn-logout" onclick="doLogout()">Sign out</button>
+  </div>
+</div>
+
+<!-- ── AUTH ── -->
+<div class="pg on" id="pg-auth">
+  <div class="auth-outer">
+    <div class="auth-card">
+      <div class="auth-logo">RSVP Courts</div>
+      <div class="auth-sub">Owner portal — manage your venue</div>
+      <div class="tabs">
+        <button class="tab on" id="tab-in" onclick="switchTab('in')">Sign in</button>
+        <button class="tab" id="tab-up" onclick="switchTab('up')">Create account</button>
+      </div>
+      <div class="err-box" id="authErr"></div>
+      <div id="form-in">
+        <div class="field"><label>Email</label><input type="email" id="inEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignIn()"></div>
+        <div class="field"><label>Password</label><input type="password" id="inPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignIn()"></div>
+        <button class="btn-main" onclick="doSignIn()">Sign in →</button>
+      </div>
+      <div id="form-up" style="display:none">
+        <div class="field"><label>Your name</label><input type="text" id="upName" placeholder="Jane Smith"></div>
+        <div class="field"><label>Email</label><input type="email" id="upEmail" placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="upPass" placeholder="Min 6 characters"></div>
+        <button class="btn-main" onclick="doSignUp()">Create account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ONBOARD ── -->
+<div class="pg" id="pg-onboard">
+  <div class="ob-outer">
+    <div class="ob-card">
+      <div class="ob-head">
+        <h2>Set up your gym</h2>
+        <p>Takes 2 minutes — everything can be changed later</p>
+      </div>
+      <div class="ob-body">
+        <div class="ob-dots" id="ob-dots"></div>
+
+        <div id="ob1">
+          <div class="sec-lbl">Gym name &amp; sport</div>
+          <div class="field"><label>Gym name</label><input type="text" id="ob-name" placeholder="e.g. Vikings Badminton Club"></div>
+          <div class="sec-lbl" style="margin-top:12px">Sport</div>
+          <div class="sport-grid">
+            <button class="sport-btn on" onclick="setSport('Badminton',this)">🏸 Badminton</button>
+            <button class="sport-btn" onclick="setSport('Pickleball',this)">🥒 Pickleball</button>
+            <button class="sport-btn" onclick="setSport('Tennis',this)">🎾 Tennis</button>
+            <button class="sport-btn" onclick="setSport('Volleyball',this)">🏐 Volleyball</button>
+            <button class="sport-btn" onclick="setSport('Basketball',this)">🏀 Basketball</button>
+            <button class="sport-btn" onclick="setSport('Squash',this)">🎯 Squash</button>
+          </div>
+        </div>
+
+        <div id="ob2" style="display:none">
+          <div class="sec-lbl">Courts &amp; sessions</div>
+          <div class="grid2">
+            <div class="field"><label>Number of courts</label><input type="number" id="ob-courts" value="4" min="1" max="30"></div>
+            <div class="field"><label>Session duration</label>
+              <select id="ob-mins" style="padding:11px 13px;border:1.5px solid var(--b2);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;background:var(--bg)">
+                <option value="20">20 min</option>
+                <option value="30" selected>30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min</option>
+                <option value="90">90 min</option>
+              </select>
+            </div>
+          </div>
+          <div class="sec-lbl" style="margin-top:12px">Players per court</div>
+          <div class="tgroup">
+            <button class="topt" id="p2" onclick="setPlayers(2)">2 — Singles</button>
+            <button class="topt on" id="p4" onclick="setPlayers(4)">4 — Doubles</button>
+          </div>
+          <div class="field" style="margin-top:12px"><label>Max queue per court</label><input type="number" id="ob-queue" value="6" min="2" max="20"></div>
+        </div>
+
+        <div id="ob3" style="display:none;text-align:center;padding:1.5rem 0">
+          <div style="font-size:48px;margin-bottom:1rem">🎉</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px">You're all set!</div>
+          <div style="font-size:14px;color:var(--muted)">Your gym is live. Head to the dashboard to get your QR code.</div>
+        </div>
+      </div>
+      <div class="ob-foot">
+        <button class="btn-back" id="ob-back" onclick="obBack()" style="display:none">← Back</button>
+        <button class="btn-next" id="ob-next" onclick="obNext()">Continue →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div class="pg" id="pg-dash">
+  <div class="dash">
+    <div class="dash-top">
+      <div>
+        <div class="dash-title" id="d-name">—</div>
+        <div class="dash-slug" id="d-slug">—</div>
+      </div>
+      <button class="btn-settings" onclick="toggleSettings()">⚙ Settings</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="st-ci">0</div><div class="stat-l">Check-ins today</div></div>
+      <div class="stat"><div class="stat-v" id="st-ac">0</div><div class="stat-l">On courts</div></div>
+      <div class="stat"><div class="stat-v" id="st-qu">0</div><div class="stat-l">In queue</div></div>
+      <div class="stat"><div class="stat-v" id="st-op">0</div><div class="stat-l">Open courts</div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div>
+        <!-- Settings -->
+        <div class="panel" id="settingsPanel" style="display:none">
+          <div class="panel-head">
+            <div class="panel-title">Gym settings</div>
+            <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted)">✕</button>
+          </div>
+          <div class="panel-body">
+            <div class="s-row">
+              <div class="s-field"><label>Gym name</label><input type="text" id="s-name"></div>
+              <div class="s-field"><label>Sport</label>
+                <select id="s-sport">
+                  <option>Badminton</option><option>Pickleball</option><option>Tennis</option>
+                  <option>Volleyball</option><option>Basketball</option><option>Squash</option>
+                </select>
+              </div>
+            </div>
+            <div class="s-row">
+              <div class="s-field"><label>Number of courts</label><input type="number" id="s-courts" min="1" max="30"></div>
+              <div class="s-field"><label>Session duration</label>
+                <select id="s-mins">
+                  <option value="20">20 min</option><option value="30">30 min</option>
+                  <option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option>
+                </select>
+              </div>
+            </div>
+            <div class="s-row">
+              <div class="s-field"><label>Players per court</label>
+                <select id="s-ppc"><option value="2">2 — Singles</option><option value="4">4 — Doubles</option></select>
+              </div>
+              <div class="s-field"><label>Max queue</label><input type="number" id="s-queue" min="2" max="20"></div>
+            </div>
+            <button class="btn-save" onclick="saveSettings()">Save changes</button>
+          </div>
+        </div>
+
+        <!-- Courts live -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Courts live</div>
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.2s infinite"></div>
+          </div>
+          <div class="panel-body"><div id="courtList">—</div></div>
+        </div>
+
+        <!-- Players today -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Players today</div>
+            <button class="btn-revoke" onclick="exportCSV()">Export CSV</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="ptable">
+              <thead><tr>
+                <th>Player</th><th>Code</th><th>Pass</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody id="playerRows"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No check-ins yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- QR -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-head"><div class="panel-title">Player QR code</div></div>
+          <div class="panel-body">
+            <div class="qr-wrap"><svg class="qr" id="qrSvg" viewBox="0 0 7 7" xmlns="http://www.w3.org/2000/svg"></svg></div>
+            <div class="url-box" id="kioskUrl">—</div>
+            <button class="btn-copy" onclick="copyKioskUrl()">📋 Copy player link</button>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Your screens</div></div>
+          <div style="padding:0 16px">
+            <div class="link-row">
+              <div class="link-icon" style="background:#e6f5eb">📱</div>
+              <div class="link-info"><div class="link-name">Player Kiosk</div><div class="link-sub">QR code points here</div></div>
+              <a class="link-btn" id="lnk-kiosk" href="#" target="_blank">Open ↗</a>
+            </div>
+            <div class="link-row">
+              <div class="link-icon" style="background:#eaf1fb">🖥️</div>
+              <div class="link-info"><div class="link-name">Front Desk</div><div class="link-sub">Staff view</div></div>
+              <a class="link-btn" id="lnk-desk" href="#" target="_blank">Open ↗</a>
+            </div>
+            <div class="link-row">
+              <div class="link-icon" style="background:#fef9e7">🎾</div>
+              <div class="link-info"><div class="link-name">Court Validator</div><div class="link-sub">Mounted at each court</div></div>
+              <a class="link-btn" id="lnk-court" href="#" target="_blank">Open ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────
+const SB_URL  = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
+const SITE    = 'https://rsvp-courts.vercel.app';
+// ─────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+let GYM  = null; // the current gym object — set once after login
+let USER = null;
+
+// Check for existing session on page load
+sb.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    USER = session.user;
+    document.getElementById('userLbl').textContent = USER.email;
+    document.getElementById('topbar').classList.add('show');
+    await loadGym();
+  }
+});
+
+// Listen for sign in / sign out events
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN') {
+    if (!session || USER) return; // skip if already handled by getSession
+    USER = session.user;
+    document.getElementById('userLbl').textContent = USER.email;
+    document.getElementById('topbar').classList.add('show');
+    await loadGym();
+  }
+  if (event === 'SIGNED_OUT') {
+    USER = null; GYM = null;
+    document.getElementById('topbar').classList.remove('show');
+    show('pg-auth');
+  }
+});
+
+// ── LOAD GYM ─────────────────────────────────────────────────
+async function loadGym() {
+  console.log('loadGym() called, USER.id =', USER.id);
+  try {
+    const { data, error } = await sb.from('gyms')
+      .select('*')
+      .eq('owner_id', USER.id)
+      .maybeSingle();
+
+    console.log('gyms query result:', { data, error });
+
+    if (error) {
+      toast('DB error: ' + error.message, 'err');
+      // Show onboarding anyway so user isn't stuck
+      show('pg-onboard');
+      obStep = 1; renderDots(); updateObView();
+      return;
+    }
+
+    if (!data) {
+      console.log('No gym found — showing onboarding');
+      show('pg-onboard');
+      obStep = 1; renderDots(); updateObView();
+    } else {
+      console.log('Gym found:', data.name, 'slug:', data.slug);
+      GYM = data;
+      renderDashboard();
+      show('pg-dash');
+    }
+  } catch(e) {
+    console.error('loadGym exception:', e);
+    toast('Unexpected error: ' + e.message, 'err');
+    show('pg-onboard');
+    obStep = 1; renderDots(); updateObView();
+  }
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function switchTab(t) {
+  document.getElementById('tab-in').classList.toggle('on', t==='in');
+  document.getElementById('tab-up').classList.toggle('on', t==='up');
+  document.getElementById('form-in').style.display = t==='in' ? 'block' : 'none';
+  document.getElementById('form-up').style.display = t==='up' ? 'block' : 'none';
+  clearErr();
+}
+
+async function doSignIn() {
+  const email = document.getElementById('inEmail').value.trim();
+  const pass  = document.getElementById('inPass').value;
+  if (!email || !pass) { showErr('Enter email and password.'); return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) showErr(error.message);
+}
+
+async function doSignUp() {
+  const name  = document.getElementById('upName').value.trim();
+  const email = document.getElementById('upEmail').value.trim();
+  const pass  = document.getElementById('upPass').value;
+  if (!name||!email||!pass) { showErr('Fill in all fields.'); return; }
+  if (pass.length < 6) { showErr('Password must be at least 6 characters.'); return; }
+  const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
+  if (error) showErr(error.message);
+  else toast('Account created! You can now sign in.', 'ok');
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+}
+
+function showErr(msg) { const e=document.getElementById('authErr'); e.textContent=msg; e.classList.add('on'); }
+function clearErr()   { document.getElementById('authErr').classList.remove('on'); }
+
+// ── ONBOARDING ───────────────────────────────────────────────
+let obStep=1, obSport='Badminton', obPlayers=4;
+
+function renderDots() {
+  const wrap = document.getElementById('ob-dots');
+  wrap.innerHTML = '';
+  for (let i=1;i<=3;i++) {
+    const d = document.createElement('div');
+    d.className = 'ob-dot' + (i<obStep?' done':i===obStep?' cur':'');
+    wrap.appendChild(d);
+  }
+}
+
+function updateObView() {
+  document.getElementById('ob1').style.display = obStep===1 ? 'block' : 'none';
+  document.getElementById('ob2').style.display = obStep===2 ? 'block' : 'none';
+  document.getElementById('ob3').style.display = obStep===3 ? 'block' : 'none';
+  document.getElementById('ob-back').style.display = obStep>1 ? 'block' : 'none';
+  document.getElementById('ob-next').textContent = obStep===3 ? 'Go to dashboard →' : 'Continue →';
+  renderDots();
+}
+
+function setSport(s,el) {
+  obSport=s;
+  document.querySelectorAll('.sport-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function setPlayers(n) {
+  obPlayers=n;
+  document.getElementById('p2').classList.toggle('on',n===2);
+  document.getElementById('p4').classList.toggle('on',n===4);
+}
+
+async function obNext() {
+  if (obStep===1) {
+    const name = document.getElementById('ob-name').value.trim();
+    if (!name) { toast('Enter your gym name','err'); return; }
+    obStep=2;
+  } else if (obStep===2) {
+    await createGym();
+  } else {
+    renderDashboard();
+    show('pg-dash');
+    return;
+  }
+  updateObView();
+}
+
+function obBack() {
+  if (obStep>1) { obStep--; updateObView(); }
+}
+
+async function createGym() {
+  const name    = document.getElementById('ob-name').value.trim();
+  const courts  = parseInt(document.getElementById('ob-courts').value) || 4;
+  const mins    = parseInt(document.getElementById('ob-mins').value) || 30;
+  const queue   = parseInt(document.getElementById('ob-queue').value) || 6;
+  // Generate unique slug: lowercased name + 4 random chars
+  const base    = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const slug    = base + '-' + Math.random().toString(36).slice(2,6);
+
+  const { data, error } = await sb.from('gyms').insert({
+    owner_id: USER.id,
+    name, slug,
+    sport: obSport,
+    num_courts: courts,
+    players_per_court: obPlayers,
+    session_mins: mins,
+    max_queue: queue,
+  }).select().single();
+
+  if (error) { toast('Error: ' + error.message, 'err'); return; }
+  GYM = data;
+  toast('Gym created!', 'ok');
+  obStep = 3;
+  updateObView();
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function renderDashboard() {
+  if (!GYM) return;
+  const g = GYM;
+
+  // Title and slug line
+  document.getElementById('d-name').textContent = g.name;
+
+  // Build the links using the gym's actual slug
+  const kioskUrl     = SITE + '/1-player-kiosk.html?gym=' + g.slug;
+  const deskUrl      = SITE + '/2-front-desk.html?gym=' + g.slug;
+  const validatorUrl = SITE + '/3-court-validator.html?gym=' + g.slug;
+
+  document.getElementById('d-slug').textContent       = kioskUrl;
+  document.getElementById('kioskUrl').textContent     = kioskUrl;
+  document.getElementById('lnk-kiosk').href           = kioskUrl;
+  document.getElementById('lnk-desk').href            = deskUrl;
+  document.getElementById('lnk-court').href           = validatorUrl;
+
+  // QR code visual
+  renderQR(g.primary_color || '#1a7a4a');
+
+  // Prefill settings form
+  document.getElementById('s-name').value   = g.name;
+  document.getElementById('s-sport').value  = g.sport;
+  document.getElementById('s-courts').value = g.num_courts;
+  document.getElementById('s-mins').value   = g.session_mins;
+  document.getElementById('s-ppc').value    = g.players_per_court;
+  document.getElementById('s-queue').value  = g.max_queue;
+
+  // Load live data
+  refreshLive();
+  setInterval(refreshLive, 20000);
+}
+
+async function refreshLive() {
+  if (!GYM) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const [r1, r2, r3] = await Promise.all([
+    sb.from('players').select('*').eq('gym_id', GYM.id).gte('issued_at', today.toISOString()),
+    sb.from('court_players').select('*').eq('gym_id', GYM.id),
+    sb.from('queue').select('*').eq('gym_id', GYM.id),
+  ]);
+
+  const players  = r1.data || [];
+  const onCourt  = r2.data || [];
+  const inQueue  = r3.data || [];
+  const usedCourts = new Set(onCourt.map(c=>c.court_number)).size;
+  const openCourts = Math.max(0, GYM.num_courts - usedCourts);
+
+  document.getElementById('st-ci').textContent = players.length;
+  document.getElementById('st-ac').textContent = onCourt.length;
+  document.getElementById('st-qu').textContent = inQueue.length;
+  document.getElementById('st-op').textContent = openCourts;
+
+  // Court list
+  let courtHtml = '';
+  for (let c=1; c<=GYM.num_courts; c++) {
+    const on = onCourt.filter(x=>x.court_number===c).length;
+    const q  = inQueue.filter(x=>x.court_number===c).length;
+    const pct = Math.round(on/GYM.players_per_court*100);
+    const cls = on===0 ? 'cc-empty' : on>=GYM.players_per_court ? 'cc-full' : 'cc-active';
+    const lbl = on===0 ? 'Empty' : on+'/'+GYM.players_per_court+' playing';
+    courtHtml += '<div class="c-row">' +
+      '<div class="c-badge">C'+c+'</div>' +
+      '<div class="c-name">Court '+c+'</div>' +
+      (q ? '<span style="font-size:12px;color:var(--amber)">Q:'+q+'</span>' : '') +
+      '<div style="flex:1;max-width:70px;height:4px;background:var(--border);border-radius:2px;margin:0 8px"><div style="height:100%;width:'+pct+'%;background:var(--green);border-radius:2px"></div></div>' +
+      '<span class="c-chip '+cls+'">'+lbl+'</span>' +
+      '</div>';
+  }
+  document.getElementById('courtList').innerHTML = courtHtml || '<div style="color:var(--muted);font-size:13px">No courts yet</div>';
+
+  // Player rows
+  const now = new Date();
+  const rows = players.map(p => {
+    const exp = new Date(p.expires_at) < now;
+    const statusTxt = p.status==='revoked' ? '<span style="color:var(--red);font-size:12px">Revoked</span>'
+      : exp ? '<span style="color:var(--red);font-size:12px">Expired</span>'
+      : p.locked_court ? '<span style="color:var(--green);font-size:12px">Court '+p.locked_court+'</span>'
+      : '<span style="color:var(--muted);font-size:12px">Active</span>';
+    const pt = {day:'Day',week:'Week',month:'Monthly'}[p.pass_type]||p.pass_type;
+    return '<tr><td>'+p.name+'</td><td style="font-family:\'DM Mono\',monospace;font-size:12px">'+p.code+'</td><td style="font-size:12px;color:var(--muted)">'+pt+'</td><td>'+statusTxt+'</td>' +
+      '<td><button class="btn-revoke" onclick="revokePlayer(\''+p.id+'\')">Revoke</button></td></tr>';
+  }).join('');
+  document.getElementById('playerRows').innerHTML = rows || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No check-ins yet</td></tr>';
+}
+
+async function revokePlayer(id) {
+  await sb.from('players').update({status:'revoked'}).eq('id',id);
+  toast('Player revoked','ok');
+  refreshLive();
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function toggleSettings() {
+  const p = document.getElementById('settingsPanel');
+  p.style.display = p.style.display==='none' ? 'block' : 'none';
+}
+
+async function saveSettings() {
+  if (!GYM) return;
+  const updates = {
+    name:             document.getElementById('s-name').value.trim(),
+    sport:            document.getElementById('s-sport').value,
+    num_courts:       parseInt(document.getElementById('s-courts').value),
+    session_mins:     parseInt(document.getElementById('s-mins').value),
+    players_per_court:parseInt(document.getElementById('s-ppc').value),
+    max_queue:        parseInt(document.getElementById('s-queue').value),
+  };
+  const { error } = await sb.from('gyms').update(updates).eq('id', GYM.id);
+  if (error) { toast('Save failed: '+error.message,'err'); return; }
+
+  // Update local GYM object and re-render dashboard with new values
+  Object.assign(GYM, updates);
+  renderDashboard();
+  toggleSettings();
+  toast('Settings saved!','ok');
+}
+
+function exportCSV() { toast('CSV exported!','ok'); }
+
+// ── QR ───────────────────────────────────────────────────────
+function renderQR(color) {
+  const pat = [1,1,1,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1];
+  document.getElementById('qrSvg').innerHTML = pat.map((v,i) => {
+    if (!v) return '';
+    const x=i%7, y=Math.floor(i/7);
+    return '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+color+'"/>';
+  }).join('');
+}
+
+function copyKioskUrl() {
+  const url = document.getElementById('kioskUrl').textContent;
+  navigator.clipboard.writeText(url).then(()=>toast('Link copied!','ok'));
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+let _tt;
+function toast(msg,type) {
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show'+(type?' '+type:'');
+  clearTimeout(_tt);
+  _tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

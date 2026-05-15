@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>RSVP Courts — Player Check-In</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--green:#1a7a4a;--lime:#c1ff72;--dark:#071c0f;--muted:#5a8060;--white:#eef5e8}
+html,body{height:100%;background:var(--dark);color:var(--white);font-family:'DM Sans',sans-serif;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(193,255,114,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(193,255,114,.035) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(1rem,4vw,2rem)}
+.gym-name{font-family:'Syne',sans-serif;font-size:clamp(32px,7vw,64px);font-weight:800;color:var(--lime);letter-spacing:.08em;text-align:center;line-height:1;margin-bottom:6px}
+.gym-sub{font-size:12px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;text-align:center;margin-bottom:clamp(1.5rem,4vh,2.5rem)}
+.card{width:100%;max-width:460px;background:rgba(255,255,255,.04);border:1px solid rgba(193,255,114,.15);border-radius:24px;overflow:hidden}
+.screen{display:none;flex-direction:column;padding:clamp(1.5rem,5vw,2.25rem);gap:1.25rem;animation:rise .3s ease}
+.screen.on{display:flex}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.s-title{font-family:'Syne',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.1}
+.s-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-top:-4px}
+.field{display:flex;flex-direction:column;gap:7px}
+.flabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}
+.field input,.field select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:clamp(11px,2.5vw,14px) 16px;font-family:'DM Sans',sans-serif;font-size:clamp(15px,3vw,18px);font-weight:500;color:var(--white);outline:none;transition:border-color .2s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--lime)}
+.field input::placeholder{color:rgba(255,255,255,.2);font-size:14px}
+.field select option{background:#0a2016;color:var(--white)}
+.btn-main{width:100%;padding:clamp(13px,3vw,16px);background:var(--lime);color:var(--dark);border:none;border-radius:14px;font-family:'Syne',sans-serif;font-size:clamp(16px,3vw,20px);font-weight:800;letter-spacing:.06em;cursor:pointer;transition:all .15s}
+.btn-main:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(193,255,114,.3)}
+.btn-main:disabled{opacity:.3;cursor:not-allowed}
+.btn-ghost{width:100%;padding:12px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.1);border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer}
+.btn-ghost:hover{border-color:rgba(255,255,255,.25);color:var(--white)}
+.wait-ring{width:72px;height:72px;border-radius:50%;background:rgba(193,255,114,.07);border:2px solid rgba(193,255,114,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;animation:breathe 2s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.wait-ring svg{width:30px;height:30px;stroke:var(--lime);stroke-width:1.5;fill:none;animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dots{display:flex;gap:6px;justify-content:center}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--lime);opacity:.25;animation:dpop 1.4s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.22s}.dot:nth-child(3){animation-delay:.44s}
+@keyframes dpop{0%,80%,100%{opacity:.25;transform:scale(1)}40%{opacity:1;transform:scale(1.4)}}
+.code-box{border:2px dashed rgba(193,255,114,.3);border-radius:16px;padding:1.5rem;text-align:center;background:rgba(193,255,114,.05)}
+.code-hint{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.code-val{font-family:'DM Mono',monospace;font-size:clamp(40px,9vw,58px);font-weight:500;color:var(--lime);letter-spacing:.1em;animation:pop .5s cubic-bezier(.34,1.5,.64,1)}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.code-owner{font-size:13px;color:var(--muted);margin-top:6px}
+.exp-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;background:rgba(193,255,114,.12);color:var(--lime)}
+.exp-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.note{display:flex;gap:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:11px 13px;font-size:13px;color:var(--muted);line-height:1.55}
+.conn-badge{position:fixed;top:14px;right:14px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:5px;z-index:50}
+.c-ok{background:rgba(193,255,114,.15);color:var(--lime)}
+.c-err{background:rgba(192,57,43,.15);color:#ff6b6b}
+.c-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--lime);color:var(--dark);padding:10px 20px;border-radius:20px;font-weight:700;font-size:13px;z-index:999;transition:transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:#ff6b6b;color:#fff}
+</style>
+</head>
+<body>
+<div class="conn-badge c-ok" id="conn"><div class="c-dot"></div><span id="connTxt">Connecting…</span></div>
+<div class="app">
+  <div class="gym-name" id="gymName">RSVP Courts</div>
+  <div class="gym-sub" id="gymSub">Scan a QR code to check in</div>
+  <div class="card">
+
+    <div class="screen on" id="s-entry">
+      <div><div class="s-title">Hello!<br>Who are you?</div><div class="s-sub">Pay at the front desk first, then enter your name here.</div></div>
+      <div class="field"><div class="flabel">Full name</div><input type="text" id="nameInput" placeholder="First &amp; last name…" autocomplete="off" oninput="onName()"></div>
+      <div class="field"><div class="flabel">Pass type</div>
+        <select id="passInput">
+          <option value="day">Day pass — expires midnight tonight</option>
+          <option value="week">Week pass — expires in 7 days</option>
+          <option value="month">Monthly member — expires in 30 days</option>
+        </select>
+      </div>
+      <button class="btn-main" id="submitBtn" onclick="submitRequest()" disabled>Submit to front desk →</button>
+      <div class="note"><span>🔒</span><span>Staff will confirm your payment and generate your code. It appears here the moment they approve.</span></div>
+    </div>
+
+    <div class="screen" id="s-waiting">
+      <div style="text-align:center;padding:.5rem 0">
+        <div class="wait-ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <div class="s-title" id="waitName" style="text-align:center;color:var(--lime)">Hi!</div>
+        <div class="s-sub" style="text-align:center;margin-top:6px">Waiting for front desk to confirm payment…</div>
+        <div class="dots" style="margin-top:1.25rem"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="note"><span>📋</span><span>Your code will appear here the moment staff approves. Don't close this page.</span></div>
+    </div>
+
+    <div class="screen" id="s-code">
+      <div style="text-align:center"><div class="s-title" id="codeGreeting">Code ready!</div></div>
+      <div class="code-box">
+        <div class="code-hint">Your check-in code</div>
+        <div class="code-val" id="codeVal">——</div>
+        <div class="code-owner" id="codeOwner">—</div>
+      </div>
+      <div style="text-align:center"><div class="exp-pill"><div class="exp-dot"></div><span id="expTxt">Valid until midnight</span></div></div>
+      <div class="note"><span>🎾</span><span>Type this code at the court screen. <strong style="color:var(--lime)">One court only</strong> — your code locks to the first court you join.</span></div>
+      <button class="btn-ghost" onclick="goHome()">← Check in another player</button>
+    </div>
+
+    <div class="screen" id="s-declined">
+      <div style="text-align:center;padding:.5rem 0">
+        <div style="font-size:48px;margin-bottom:12px">⛔</div>
+        <div class="s-title" style="text-align:center;color:#ff6b6b">Request declined</div>
+        <div class="s-sub" style="text-align:center;margin-top:8px">Please speak with a staff member.</div>
+      </div>
+      <button class="btn-ghost" onclick="goHome()">← Try again</button>
+    </div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
+const GYM_SLUG = new URLSearchParams(window.location.search).get('gym');
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+let GYM = null, playerId = null, realtimeSub = null;
+
+async function init() {
+  if (!GYM_SLUG) {
+    setConn(false, 'No gym — scan a QR code');
+    return;
+  }
+  const { data, error } = await sb.from('gyms').select('*').eq('slug', GYM_SLUG).maybeSingle();
+  if (error || !data) { setConn(false, 'Gym not found'); return; }
+  GYM = data;
+  document.getElementById('gymName').textContent = GYM.name.toUpperCase();
+  document.getElementById('gymSub').textContent = GYM.sport + ' · ' + GYM.num_courts + ' Courts';
+  setConn(true, 'Live');
+}
+
+function onName() {
+  document.getElementById('submitBtn').disabled = document.getElementById('nameInput').value.trim().length < 2;
+}
+
+async function submitRequest() {
+  const name = document.getElementById('nameInput').value.trim();
+  const pass = document.getElementById('passInput').value;
+  if (!GYM) { toast('Not connected to a gym', true); return; }
+  const { data, error } = await sb.from('players').insert({
+    gym_id: GYM.id, name, pass_type: pass,
+    code: 'PENDING', status: 'pending', expires_at: expiryFor(pass)
+  }).select().single();
+  if (error) { toast('Error: ' + error.message, true); return; }
+  playerId = data.id;
+  document.getElementById('waitName').textContent = 'Hi ' + name.split(' ')[0] + '!';
+  showScreen('s-waiting');
+  listenForApproval(data.id);
+  toast('Sent to front desk!');
+}
+
+function listenForApproval(id) {
+  if (realtimeSub) sb.removeChannel(realtimeSub);
+  realtimeSub = sb.channel('kiosk-' + id)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'players', filter: 'id=eq.' + id },
+      ({ new: p }) => {
+        if (p.status === 'active') showCode(p);
+        if (p.status === 'revoked') showScreen('s-declined');
+      })
+    .subscribe();
+}
+
+function showCode(p) {
+  document.getElementById('codeGreeting').textContent = 'Code ready, ' + p.name.split(' ')[0] + '!';
+  document.getElementById('codeVal').textContent = p.code;
+  document.getElementById('codeOwner').textContent = p.name + ' · ' + {day:'Day Pass',week:'Week Pass',month:'Monthly Member'}[p.pass_type];
+  const ms = new Date(p.expires_at) - new Date();
+  document.getElementById('expTxt').textContent = p.pass_type === 'day' ? 'Valid until midnight tonight' : 'Valid for ' + Math.ceil(ms/86400000) + ' more days';
+  showScreen('s-code');
+}
+
+function goHome() {
+  if (realtimeSub) { sb.removeChannel(realtimeSub); realtimeSub = null; }
+  playerId = null;
+  document.getElementById('nameInput').value = '';
+  document.getElementById('submitBtn').disabled = true;
+  showScreen('s-entry');
+}
+
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); document.getElementById(id).classList.add('on'); }
+function setConn(ok, txt) { const b = document.getElementById('conn'); b.className = 'conn-badge ' + (ok ? 'c-ok' : 'c-err'); document.getElementById('connTxt').textContent = txt; }
+function expiryFor(p) { if (p==='day'){const d=new Date();d.setHours(23,59,59,999);return d.toISOString();} return new Date(Date.now()+{week:168,month:720}[p]*3600000).toISOString(); }
+let tt; function toast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3000);}
+
+init();
+</script>
+</body>
+</html>
