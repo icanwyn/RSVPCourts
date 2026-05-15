@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -210,10 +211,20 @@ function subscribeRealtime() {
 }
 
 function generateCode() {
-  const avail = ANIMALS.filter(a => !usedAnimals.has(a));
-  const animal = avail.length ? avail[Math.floor(Math.random()*avail.length)] : ANIMALS[Math.floor(Math.random()*ANIMALS.length)];
-  const num = String(Math.floor(Math.random()*97)+2).padStart(2,'0');
-  return animal + num;
+  // Try up to 20 times to get a unique code not already used today
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const avail = ANIMALS.filter(a => !usedAnimals.has(a));
+    const animal = avail.length
+      ? avail[Math.floor(Math.random() * avail.length)]
+      : ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+    const num = String(Math.floor(Math.random() * 97) + 2).padStart(2, '0');
+    const code = animal + num;
+    // Check against all issued codes this session
+    if (!issued.find(p => p.code === code)) return code;
+  }
+  // Fallback: animal + timestamp suffix
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  return animal + String(Date.now()).slice(-2);
 }
 
 async function approve(playerId) {
