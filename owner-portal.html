@@ -5,250 +5,173 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP Courts — Owner Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--green:#1a7a4a}
-body{font-family:'DM Sans',sans-serif;background:#f4f6f3;color:#0d1a0f}
-.topbar{display:none;background:white;border-bottom:1px solid #e0e8e0;padding:0 20px;height:52px;align-items:center;justify-content:space-between}
-.topbar.show{display:flex}
-.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#1a7a4a}
-.btn-logout{padding:6px 14px;border:1px solid #c8d8c8;border-radius:8px;background:none;cursor:pointer}
-.pg{display:none}
-.pg.on{display:block}
-.card{background:white;border:1px solid #e0e8e0;border-radius:20px;padding:2.5rem;max-width:420px;margin:60px auto;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
-.input{width:100%;padding:12px;border:1.5px solid #c8d8c8;border-radius:10px;margin-bottom:12px;font-size:15px}
-.btn{width:100%;padding:14px;background:#1a7a4a;color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer}
-.error{color:#c0392b;background:#fee;padding:10px;border-radius:8px;margin-bottom:12px;display:none}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:white;padding:12px 24px;border-radius:30px;display:none}
+body { font-family: system-ui; background: #f4f6f3; padding: 40px; }
+.card { background: white; padding: 30px; border-radius: 16px; max-width: 400px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
+button { width: 100%; padding: 14px; background: #1a7a4a; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+.hidden { display: none; }
+.error { color: red; background: #fee; padding: 10px; border-radius: 8px; }
 </style>
 </head>
 <body>
 
-<!-- Top Bar -->
-<div class="topbar" id="topbar">
-  <div class="logo">RSVP Courts</div>
-  <div>
-    <span id="userEmail" style="margin-right:15px"></span>
-    <button class="btn-logout" onclick="forceSignOut()">Sign out</button>
-  </div>
+<div id="topbar" style="display:none; margin-bottom:20px;">
+  Logged in as: <span id="userEmail"></span>
+  <button onclick="forceLogout()" style="background:#c0392b; padding:8px 16px; margin-left:20px;">Force Sign Out</button>
 </div>
 
-<!-- Login / Sign Up -->
-<div class="pg on" id="pg-auth">
+<!-- Auth Screen -->
+<div id="auth-screen">
   <div class="card">
-    <h2 style="text-align:center;margin-bottom:8px">RSVP Courts</h2>
-    <p style="text-align:center;color:#666;margin-bottom:20px">Owner Portal</p>
+    <h2>RSVP Courts</h2>
+    <div id="error" class="error" style="display:none;"></div>
 
-    <div id="errorBox" class="error"></div>
+    <input type="email" id="email" placeholder="Email" value="chuyenh@lasdschools.org">
+    <input type="password" id="password" placeholder="Password">
 
-    <div style="display:flex;gap:8px;margin-bottom:20px">
-      <button onclick="showAuthTab('signin')" id="tab-signin" style="flex:1;padding:10px;border-radius:8px;border:1px solid #1a7a4a;background:#1a7a4a;color:white">Sign In</button>
-      <button onclick="showAuthTab('signup')" id="tab-signup" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:white">Create Account</button>
-    </div>
-
-    <!-- Sign In -->
-    <div id="signin-form">
-      <input type="email" id="email" class="input" placeholder="Email" value="chuyenh@lasdschools.org">
-      <input type="password" id="password" class="input" placeholder="Password">
-      <button class="btn" onclick="signIn()">Sign In</button>
-    </div>
-
-    <!-- Sign Up -->
-    <div id="signup-form" style="display:none">
-      <input type="text" id="name" class="input" placeholder="Your Name">
-      <input type="email" id="signupEmail" class="input" placeholder="Email">
-      <input type="password" id="signupPassword" class="input" placeholder="Password (min 6 chars)">
-      <button class="btn" onclick="signUp()">Create Account</button>
-    </div>
-  </div>
-</div>
-
-<!-- Onboarding -->
-<div class="pg" id="pg-onboard">
-  <div class="card">
-    <h2>Welcome! Let's set up your gym</h2>
-    <input type="text" id="gymName" class="input" placeholder="Gym Name (e.g. Vikings Badminton)">
-    <button class="btn" onclick="createNewGym()" style="margin-top:10px">Create Gym</button>
+    <button onclick="login()">Sign In</button>
+    <button onclick="signup()" style="background:#555;">Create Account</button>
   </div>
 </div>
 
 <!-- Dashboard -->
-<div class="pg" id="pg-dash">
-  <div style="max-width:900px;margin:40px auto;padding:0 20px">
-    <h1 id="gymTitle">Welcome</h1>
-    <p id="gymSlug" style="color:#666"></p>
-
-    <div style="margin:30px 0">
-      <h3>Player Kiosk Link</h3>
-      <div id="kioskLink" style="background:#f0f0f0;padding:12px;border-radius:8px;font-family:monospace"></div>
-      <button onclick="copyLink()" style="margin-top:10px">Copy Link</button>
-    </div>
-
-    <button onclick="goToSettings()" style="padding:12px 20px">⚙ Open Settings</button>
-    <button onclick="forceSignOut()" style="padding:12px 20px;margin-left:10px;background:#c0392b;color:white;border:none;border-radius:8px">Sign Out</button>
+<div id="dashboard" class="hidden">
+  <div class="card">
+    <h2 id="gymName">Loading...</h2>
+    <p id="gymInfo"></p>
+    <div id="kioskLink" style="background:#f0f0f0; padding:12px; border-radius:8px; margin:20px 0; font-family:monospace;"></div>
+    <button onclick="copyLink()">Copy Kiosk Link</button>
+    <button onclick="forceLogout()" style="background:#c0392b; margin-top:20px;">Sign Out</button>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- Onboarding -->
+<div id="onboarding" class="hidden">
+  <div class="card">
+    <h2>Create your gym</h2>
+    <input type="text" id="newGymName" placeholder="Gym Name">
+    <button onclick="createGym()">Create Gym</button>
+  </div>
+</div>
 
 <script>
 const SUPABASE_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
 
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null;
-let currentGym = null;
+let user = null;
+let gym = null;
 
-// ==================== AUTH ====================
-sb.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth event:', event);
+sb.auth.onAuthStateChange((event, session) => {
+  console.log('Auth event:', event, session);
+  
+  if (session?.user) {
+    user = session.user;
+    document.getElementById('userEmail').textContent = user.email;
+    document.getElementById('topbar').style.display = 'block';
+    loadGym();
+  } else {
+    showScreen('auth-screen');
+    document.getElementById('topbar').style.display = 'none';
+  }
+});
 
-  if (!session) {
-    currentUser = null;
-    document.getElementById('topbar').classList.remove('show');
-    showPage('pg-auth');
+async function login() {
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) showError(error.message);
+}
+
+async function signup() {
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+  const { error } = await sb.auth.signUp({ email, password: pass });
+  if (error) showError(error.message);
+  else alert('Check your email to confirm account');
+}
+
+async function loadGym() {
+  console.log('Loading gym for user:', user.id);
+
+  const { data, error } = await sb
+    .from('gyms')
+    .select('*')
+    .eq('owner_id', user.id)
+    .maybeSingle();
+
+  console.log('Gym query result:', { data, error });
+
+  if (error) {
+    showError('Error loading gym: ' + error.message);
     return;
   }
 
-  currentUser = session.user;
-  document.getElementById('userEmail').textContent = currentUser.email;
-  document.getElementById('topbar').classList.add('show');
-
-  // Load gym or show onboarding
-  await loadUserGym();
-});
-
-async function signIn() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) showError(error.message);
-}
-
-async function signUp() {
-  const name = document.getElementById('name').value;
-  const email = document.getElementById('signupEmail').value;
-  const password = document.getElementById('signupPassword').value;
-
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) showError(error.message);
-  else alert('Account created! Please check your email to confirm.');
-}
-
-async function forceSignOut() {
-  await sb.auth.signOut({ scope: 'global' });
-  localStorage.clear();
-  sessionStorage.clear();
-  location.reload(); // Hard reset
-}
-
-// ==================== LOAD GYM ====================
-async function loadUserGym() {
-  if (!currentUser) return;
-
-  try {
-    const { data, error } = await sb
-      .from('gyms')
-      .select('*')
-      .eq('owner_id', currentUser.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Gym load error:', error);
-      showError('Failed to load gym data');
-      return;
-    }
-
-    if (data) {
-      currentGym = data;
-      showDashboard();
-    } else {
-      showPage('pg-onboard');
-    }
-  } catch (e) {
-    console.error(e);
-    showError('Something went wrong loading your gym');
+  if (data) {
+    gym = data;
+    showDashboard();
+  } else {
+    showScreen('onboarding');
   }
 }
 
 function showDashboard() {
-  document.getElementById('gymTitle').textContent = currentGym.name || 'Your Gym';
-  const link = `${window.location.origin}/1-player-kiosk.html?gym=${currentGym.slug}`;
-  document.getElementById('gymSlug').textContent = currentGym.slug;
+  document.getElementById('gymName').textContent = gym.name;
+  const link = `${location.origin}/1-player-kiosk.html?gym=${gym.slug}`;
   document.getElementById('kioskLink').textContent = link;
-  showPage('pg-dash');
+  showScreen('dashboard');
 }
 
-async function createNewGym() {
-  const name = document.getElementById('gymName').value.trim();
-  if (!name) return alert('Please enter a gym name');
+async function createGym() {
+  const name = document.getElementById('newGymName').value.trim();
+  if (!name) return alert('Enter gym name');
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36).slice(-4);
+  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
 
   const { data, error } = await sb.from('gyms').insert({
-    owner_id: currentUser.id,
-    name: name,
-    slug: slug,
+    owner_id: user.id,
+    name,
+    slug,
     num_courts: 4,
     players_per_court: 4,
-    session_mins: 30,
-    day_fee: 18,
-    week_fee: 49,
-    month_fee: 129
+    session_mins: 30
   }).select().single();
 
   if (error) {
-    alert('Error creating gym: ' + error.message);
+    alert('Error: ' + error.message);
     return;
   }
 
-  currentGym = data;
+  gym = data;
   showDashboard();
 }
 
 function copyLink() {
-  const text = document.getElementById('kioskLink').textContent;
-  navigator.clipboard.writeText(text);
-  showToast('Link copied!');
+  navigator.clipboard.writeText(document.getElementById('kioskLink').textContent);
+  alert('Link copied!');
 }
 
-function showPage(pageId) {
-  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
-  document.getElementById(pageId).classList.add('on');
+function forceLogout() {
+  sb.auth.signOut({ scope: 'global' });
+  localStorage.clear();
+  location.reload();
 }
 
-function showAuthTab(tab) {
-  document.getElementById('signin-form').style.display = tab === 'signin' ? 'block' : 'none';
-  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
-  document.getElementById('tab-signin').style.background = tab === 'signin' ? '#1a7a4a' : 'white';
-  document.getElementById('tab-signin').style.color = tab === 'signin' ? 'white' : 'black';
-  document.getElementById('tab-signup').style.background = tab === 'signup' ? '#1a7a4a' : 'white';
-  document.getElementById('tab-signup').style.color = tab === 'signup' ? 'white' : 'black';
+function showScreen(id) {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('onboarding').classList.add('hidden');
+  document.getElementById(id).classList.remove('hidden');
 }
 
 function showError(msg) {
-  const box = document.getElementById('errorBox');
-  box.textContent = msg;
-  box.style.display = 'block';
-  setTimeout(() => box.style.display = 'none', 5000);
+  const el = document.getElementById('error');
+  el.textContent = msg;
+  el.style.display = 'block';
 }
-
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.style.display = 'block';
-  setTimeout(() => toast.style.display = 'none', 2000);
-}
-
-// Auto focus email
-window.onload = () => {
-  const emailField = document.getElementById('email');
-  if (emailField) emailField.focus();
-};
 </script>
 </body>
 </html>
