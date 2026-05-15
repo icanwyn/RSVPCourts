@@ -5,200 +5,250 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP Courts — Owner Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* (same styles as before - keeping it short) */
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--green:#1a7a4a;--bg:#f4f6f3;--surface:#fff;--dark:#0d1a0f;--muted:#6b7a6b;--border:#e0e8e0;--b2:#c8d8c8;--red:#c0392b}
-html,body{min-height:100%;background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:none;align-items:center;justify-content:space-between}
+:root{--green:#1a7a4a}
+body{font-family:'DM Sans',sans-serif;background:#f4f6f3;color:#0d1a0f}
+.topbar{display:none;background:white;border-bottom:1px solid #e0e8e0;padding:0 20px;height:52px;align-items:center;justify-content:space-between}
 .topbar.show{display:flex}
-.logo{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--green)}
-.btn-logout{padding:6px 14px;background:transparent;border:1px solid var(--b2);border-radius:8px;font-size:13px;cursor:pointer}
-.pg{display:none}.pg.on{display:block}
-.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2rem;max-width:400px;margin:2rem auto}
-.field{margin-bottom:13px}
-.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase}
-.field input{padding:11px 13px;border:1.5px solid var(--b2);border-radius:10px;width:100%;font-size:15px}
-.btn-main{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--dark);color:#fff;padding:10px 20px;border-radius:20px;z-index:999;transition:all .3s}
-.toast.show{transform:translateX(-50%) translateY(0)}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#1a7a4a}
+.btn-logout{padding:6px 14px;border:1px solid #c8d8c8;border-radius:8px;background:none;cursor:pointer}
+.pg{display:none}
+.pg.on{display:block}
+.card{background:white;border:1px solid #e0e8e0;border-radius:20px;padding:2.5rem;max-width:420px;margin:60px auto;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+.input{width:100%;padding:12px;border:1.5px solid #c8d8c8;border-radius:10px;margin-bottom:12px;font-size:15px}
+.btn{width:100%;padding:14px;background:#1a7a4a;color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer}
+.error{color:#c0392b;background:#fee;padding:10px;border-radius:8px;margin-bottom:12px;display:none}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:white;padding:12px 24px;border-radius:30px;display:none}
 </style>
 </head>
 <body>
 
+<!-- Top Bar -->
 <div class="topbar" id="topbar">
   <div class="logo">RSVP Courts</div>
   <div>
-    <span id="userLbl"></span>
-    <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    <span id="userEmail" style="margin-right:15px"></span>
+    <button class="btn-logout" onclick="forceSignOut()">Sign out</button>
   </div>
 </div>
 
-<!-- AUTH -->
+<!-- Login / Sign Up -->
 <div class="pg on" id="pg-auth">
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center">
-    <div class="auth-card">
-      <div style="text-align:center;font-family:'Syne',sans-serif;font-size:26px;color:var(--green);margin-bottom:8px">RSVP Courts</div>
-      <div style="text-align:center;margin-bottom:20px;color:var(--muted)">Owner Portal</div>
+  <div class="card">
+    <h2 style="text-align:center;margin-bottom:8px">RSVP Courts</h2>
+    <p style="text-align:center;color:#666;margin-bottom:20px">Owner Portal</p>
 
-      <div id="authErr" style="color:#c0392b;background:#fee;padding:10px;border-radius:8px;display:none;margin-bottom:12px"></div>
+    <div id="errorBox" class="error"></div>
 
-      <div style="display:flex;background:#f0f0f0;border-radius:10px;padding:4px;margin-bottom:20px">
-        <button onclick="switchTab('in')" id="tab-in" style="flex:1;padding:8px;border-radius:7px;border:none;background:white;font-weight:600">Sign in</button>
-        <button onclick="switchTab('up')" id="tab-up" style="flex:1;padding:8px;border-radius:7px;border:none;background:transparent;font-weight:600">Create account</button>
-      </div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button onclick="showAuthTab('signin')" id="tab-signin" style="flex:1;padding:10px;border-radius:8px;border:1px solid #1a7a4a;background:#1a7a4a;color:white">Sign In</button>
+      <button onclick="showAuthTab('signup')" id="tab-signup" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:white">Create Account</button>
+    </div>
 
-      <div id="form-in">
-        <div class="field"><label>Email</label><input type="email" id="inEmail"></div>
-        <div class="field"><label>Password</label><input type="password" id="inPass"></div>
-        <button class="btn-main" onclick="doSignIn()">Sign In →</button>
-      </div>
+    <!-- Sign In -->
+    <div id="signin-form">
+      <input type="email" id="email" class="input" placeholder="Email" value="chuyenh@lasdschools.org">
+      <input type="password" id="password" class="input" placeholder="Password">
+      <button class="btn" onclick="signIn()">Sign In</button>
+    </div>
 
-      <div id="form-up" style="display:none">
-        <div class="field"><label>Name</label><input type="text" id="upName"></div>
-        <div class="field"><label>Email</label><input type="email" id="upEmail"></div>
-        <div class="field"><label>Password</label><input type="password" id="upPass"></div>
-        <button class="btn-main" onclick="doSignUp()">Create Account →</button>
-      </div>
+    <!-- Sign Up -->
+    <div id="signup-form" style="display:none">
+      <input type="text" id="name" class="input" placeholder="Your Name">
+      <input type="email" id="signupEmail" class="input" placeholder="Email">
+      <input type="password" id="signupPassword" class="input" placeholder="Password (min 6 chars)">
+      <button class="btn" onclick="signUp()">Create Account</button>
     </div>
   </div>
 </div>
 
-<!-- ONBOARDING + DASHBOARD (same as before) -->
-<div class="pg" id="pg-onboard">... (keep your onboarding content) ...</div>
-<div class="pg" id="pg-dash">... (keep your dashboard content) ...</div>
+<!-- Onboarding -->
+<div class="pg" id="pg-onboard">
+  <div class="card">
+    <h2>Welcome! Let's set up your gym</h2>
+    <input type="text" id="gymName" class="input" placeholder="Gym Name (e.g. Vikings Badminton)">
+    <button class="btn" onclick="createNewGym()" style="margin-top:10px">Create Gym</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="pg" id="pg-dash">
+  <div style="max-width:900px;margin:40px auto;padding:0 20px">
+    <h1 id="gymTitle">Welcome</h1>
+    <p id="gymSlug" style="color:#666"></p>
+
+    <div style="margin:30px 0">
+      <h3>Player Kiosk Link</h3>
+      <div id="kioskLink" style="background:#f0f0f0;padding:12px;border-radius:8px;font-family:monospace"></div>
+      <button onclick="copyLink()" style="margin-top:10px">Copy Link</button>
+    </div>
+
+    <button onclick="goToSettings()" style="padding:12px 20px">⚙ Open Settings</button>
+    <button onclick="forceSignOut()" style="padding:12px 20px;margin-left:10px;background:#c0392b;color:white;border:none;border-radius:8px">Sign Out</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== SUPABASE ====================
-const SB_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
+const SUPABASE_URL = 'https://vsycqimhkzppautumsyo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWNxaW1oa3pwcGF1dHVtc3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTMyMjEsImV4cCI6MjA5MzM4OTIyMX0.upBxit5d5nA6b9oVy8CbxIbzpO2m7_Df27IgKjg3l2k';
 
 const { createClient } = supabase;
-const sb = createClient(SB_URL, SB_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let USER = null;
-let GYM = null;
+let currentUser = null;
+let currentGym = null;
 
-// ===================== IMPROVED AUTH LISTENER =====================
-sb.auth.onAuthStateChange((event, session) => {
-  console.log('Auth Event:', event);
+// ==================== AUTH ====================
+sb.auth.onAuthStateChange(async (event, session) => {
+  console.log('Auth event:', event);
 
-  if (event === 'SIGNED_OUT' || !session) {
-    USER = null;
+  if (!session) {
+    currentUser = null;
     document.getElementById('topbar').classList.remove('show');
-    show('pg-auth');
+    showPage('pg-auth');
     return;
   }
 
-  if (session?.user) {
-    USER = session.user;
-    document.getElementById('userLbl').textContent = USER.email;
-    document.getElementById('topbar').classList.add('show');
-    loadGym();
-  }
+  currentUser = session.user;
+  document.getElementById('userEmail').textContent = currentUser.email;
+  document.getElementById('topbar').classList.add('show');
+
+  // Load gym or show onboarding
+  await loadUserGym();
 });
 
-// ===================== SIGN IN =====================
-async function doSignIn() {
-  const email = document.getElementById('inEmail').value.trim();
-  const pass = document.getElementById('inPass').value;
-  if (!email || !pass) return showErr('Enter email and password');
+async function signIn() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
 
-  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) showErr(error.message);
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) showError(error.message);
 }
 
-// ===================== SIGN UP =====================
-async function doSignUp() {
-  const name = document.getElementById('upName').value.trim();
-  const email = document.getElementById('upEmail').value.trim();
-  const pass = document.getElementById('upPass').value;
-  if (!name || !email || !pass) return showErr('Fill all fields');
+async function signUp() {
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
 
-  const { error } = await sb.auth.signUp({ email, password: pass });
-  if (error) showErr(error.message);
-  else toast('Account created! Confirm your email then sign in.');
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) showError(error.message);
+  else alert('Account created! Please check your email to confirm.');
 }
 
-// ===================== STRONG LOGOUT =====================
-async function doLogout() {
+async function forceSignOut() {
+  await sb.auth.signOut({ scope: 'global' });
+  localStorage.clear();
+  sessionStorage.clear();
+  location.reload(); // Hard reset
+}
+
+// ==================== LOAD GYM ====================
+async function loadUserGym() {
+  if (!currentUser) return;
+
   try {
-    // Strong sign out (clears all sessions)
-    await sb.auth.signOut({ scope: 'global' });
+    const { data, error } = await sb
+      .from('gyms')
+      .select('*')
+      .eq('owner_id', currentUser.id)
+      .single();
 
-    // Force clear everything
-    USER = null;
-    localStorage.clear();
-    sessionStorage.clear();
+    if (error && error.code !== 'PGRST116') {
+      console.error('Gym load error:', error);
+      showError('Failed to load gym data');
+      return;
+    }
 
-    document.getElementById('topbar').classList.remove('show');
-    show('pg-auth');
-
-    toast('Signed out successfully');
-    
-    // Extra safety: reload page after 1 second
-    setTimeout(() => location.reload(), 1000);
-  } catch (err) {
-    console.error(err);
-    toast('Logout failed. Try hard refresh (Ctrl+Shift+R)', true);
+    if (data) {
+      currentGym = data;
+      showDashboard();
+    } else {
+      showPage('pg-onboard');
+    }
+  } catch (e) {
+    console.error(e);
+    showError('Something went wrong loading your gym');
   }
 }
 
-// ===================== LOAD GYM =====================
-async function loadGym() {
-  if (!USER) return;
-  const { data } = await sb.from('gyms').select('*').eq('owner_id', USER.id).maybeSingle();
-  
-  if (data) {
-    GYM = data;
-    renderDashboard();
-    show('pg-dash');
-  } else {
-    show('pg-onboard');
+function showDashboard() {
+  document.getElementById('gymTitle').textContent = currentGym.name || 'Your Gym';
+  const link = `${window.location.origin}/1-player-kiosk.html?gym=${currentGym.slug}`;
+  document.getElementById('gymSlug').textContent = currentGym.slug;
+  document.getElementById('kioskLink').textContent = link;
+  showPage('pg-dash');
+}
+
+async function createNewGym() {
+  const name = document.getElementById('gymName').value.trim();
+  if (!name) return alert('Please enter a gym name');
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36).slice(-4);
+
+  const { data, error } = await sb.from('gyms').insert({
+    owner_id: currentUser.id,
+    name: name,
+    slug: slug,
+    num_courts: 4,
+    players_per_court: 4,
+    session_mins: 30,
+    day_fee: 18,
+    week_fee: 49,
+    month_fee: 129
+  }).select().single();
+
+  if (error) {
+    alert('Error creating gym: ' + error.message);
+    return;
   }
+
+  currentGym = data;
+  showDashboard();
 }
 
-// ===================== DASHBOARD + SETTINGS (keep your existing code) =====================
-function renderDashboard() {
-  if (!GYM) return;
-  document.getElementById('d-name').textContent = GYM.name || 'Your Gym';
-  const url = `${location.origin}/1-player-kiosk.html?gym=${GYM.slug}`;
-  document.getElementById('kioskUrl').textContent = url;
+function copyLink() {
+  const text = document.getElementById('kioskLink').textContent;
+  navigator.clipboard.writeText(text);
+  showToast('Link copied!');
 }
 
-function toggleSettings() { /* your existing code */ }
-async function saveSettings() { /* your existing code */ }
-
-// ===================== HELPERS =====================
-function show(page) {
+function showPage(pageId) {
   document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
-  document.getElementById(page).classList.add('on');
+  document.getElementById(pageId).classList.add('on');
 }
 
-function showErr(msg) {
-  const el = document.getElementById('authErr');
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 4000);
+function showAuthTab(tab) {
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-signin').style.background = tab === 'signin' ? '#1a7a4a' : 'white';
+  document.getElementById('tab-signin').style.color = tab === 'signin' ? 'white' : 'black';
+  document.getElementById('tab-signup').style.background = tab === 'signup' ? '#1a7a4a' : 'white';
+  document.getElementById('tab-signup').style.color = tab === 'signup' ? 'white' : 'black';
 }
 
-function toast(msg, error = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = error ? '#c0392b' : '#1a7a4a';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+  setTimeout(() => box.style.display = 'none', 5000);
 }
 
-function switchTab(t) {
-  document.getElementById('tab-in').style.background = t === 'in' ? 'white' : 'transparent';
-  document.getElementById('tab-up').style.background = t === 'up' ? 'white' : 'transparent';
-  document.getElementById('form-in').style.display = t === 'in' ? 'block' : 'none';
-  document.getElementById('form-up').style.display = t === 'up' ? 'block' : 'none';
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 2000);
 }
+
+// Auto focus email
+window.onload = () => {
+  const emailField = document.getElementById('email');
+  if (emailField) emailField.focus();
+};
 </script>
 </body>
 </html>
